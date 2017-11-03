@@ -1,23 +1,32 @@
 
 import re
 import glob
+import time
 import urllib
+import threading
+import traceback
 
 from flask import Flask, request
 
 # Load the application and configuration defaults.
 app = Flask(__name__, instance_path="/usr/share/x509-scitokens-issuer", instance_relative_config=True)
-app.config.update({
-    "config_file_glob": "/etc/x509-scitokens-issuer/*.cfg",
-    "lifetime": 3600,
-    "issuer_key": "/etc/x509-scitokens-issuer/issuer.json",
-    "enabled": False
-})
-app.config.from_pyfile("x509_scitokens.cfg")
-config_glob = glob.glob(app.config["config_file_glob"])
-for fname in glob.glob(config_glob):
-    app.config.from_pyfile(fname)
+app.updater_thread = None
 
+def _load_default_config():
+    app.config.update({
+        "config_file_glob": "/etc/x509-scitokens-issuer/conf.d/*.cfg",
+        "lifetime": 3600,
+        "issuer_key": "/etc/x509-scitokens-issuer/issuer.json",
+        "enabled": False
+    })
+    app.config.from_pyfile("x509_scitokens_issuer.cfg")
+    config_glob = str(app.config['config_file_glob'])
+    files = glob.glob(config_glob)
+    files.sort()
+    for fname in files:
+        app.config.from_pyfile(fname)
+
+_load_default_config()
 
 class InvalidFQAN(Exception):
     pass
@@ -119,15 +128,31 @@ def update_app():
     try:
         rule_list, users_mapping = regenerate_mappings()
     except:
-        # TODO: log
-        return
+        raise
+
     app.users_mapping = users_mapping
     app.rules = rule_list
     if app.config['enabled'] == False:
         raise Exception("Application is not currently enabled.")
+    print "Users mapping:", app.users_mapping
+    print "App rules:", app.rules
 
+def launch_updater_thread():
+    def updater_target(repeat=True):
+        try:
+            update_app()
+        except Exception, e:
+            print "Failure occurred when trying to update the app config:", str(e)
+            traceback.print_tb()
+        if repeat:
+            time.sleep(60)
+    updater_target(repeat=False)
+    if not app.updater_thread:
+        app.updater_thread = threading.Thread(target=updater_target)
+        app.updater_thread.daemon = True
+        app.updater_thread.start()
 # Initialize the application as part of the module loading.
-update_app()
+launch_updater_thread()
 
 def generate_formats(cred):
     info = {}
