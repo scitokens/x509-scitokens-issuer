@@ -143,7 +143,7 @@ def launch_updater_thread():
             update_app()
         except Exception, e:
             print "Failure occurred when trying to update the app config:", str(e)
-            traceback.print_tb()
+            traceback.print_exc()
         if repeat:
             time.sleep(60)
     updater_target(repeat=False)
