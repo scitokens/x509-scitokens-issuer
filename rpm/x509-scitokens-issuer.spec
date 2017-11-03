@@ -55,11 +55,14 @@ fi
 
 %files
 %doc README.md
-%{_sysconfdir}/%{name}
-%{_sysconfdir}/httpd/conf.d/x509_scitokens_issuer.conf
+%dir %{_sysconfdir}/%{name}
+%dir %{_sysconfdir}/%{name}/conf.d
+%config(noreplace) %{_sysconfdir}/%{name}/conf.d/00-defaults.cfg
+%config(noreplace) %{_sysconfdir}/%{name}/rules.json
+%config(noreplace) %{_sysconfdir}/httpd/conf.d/x509_scitokens_issuer.conf
 %{_bindir}/cms-update-mapping
 %{python2_sitelib}/x509_scitokens_issuer*
-%attr(0700, apache, apache) %dir %{_localstatedir}/cache/httpd/%{name}
+%ghost %attr(0700, apache, apache) %dir %{_localstatedir}/cache/httpd/%{name}
 %attr(-, apache, apache) %{_localstatedir}/cache/httpd/%{name}/dn_mapping.json
 %{_unitdir}/cms-mapping-updater.service
 %{_unitdir}/cms-mapping-updater.timer

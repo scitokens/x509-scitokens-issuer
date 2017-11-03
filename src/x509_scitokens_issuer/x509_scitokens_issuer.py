@@ -17,6 +17,7 @@ def _load_default_config():
         "config_file_glob": "/etc/x509-scitokens-issuer/conf.d/*.cfg",
         "lifetime": 3600,
         "issuer_key": "/etc/x509-scitokens-issuer/issuer.json",
+        "rules_mapping": "/etc/x509-scitokens-issuer/rules.json",
         "enabled": False
     })
     app.config.from_pyfile("x509_scitokens_issuer.cfg")
