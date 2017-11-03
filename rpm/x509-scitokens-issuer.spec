@@ -46,6 +46,11 @@ fi
 %files -n python2-%{pypi_name}
 %doc README.rst
 %{_bindir}/cms_update_mapping
-%{python2_sitelib}/x509_scitokens_issuer.py*
+%{python2_sitelib}/x509_scitokens_issuer*
+%attr(0700, apache, apache) %dir %{_localstatedir}/cache/%{name}
+%attr(-, apache, apache) %{_localstatedir}/cache/%{name}/dn_mapping.json
+%{_sysconfdir}/%{name}
+%{_unitdir}/%{name}.service
+%{_unitdir}/%{name}.timer
 
 %changelog
