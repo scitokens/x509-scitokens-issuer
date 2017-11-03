@@ -64,6 +64,6 @@ fi
 %{_unitdir}/cms-mapping-updater.service
 %{_unitdir}/cms-mapping-updater.timer
 %{_datarootdir}/%{name}/x509_scitokens_issuer.cfg
-%{_datarootdir}/www/wsgi-scripts/%{name}.wsgi
+%{_localstatedir}/www/wsgi-scripts/%{name}.wsgi
 
 %changelog
