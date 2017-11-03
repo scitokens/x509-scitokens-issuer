@@ -28,32 +28,42 @@ Requires:       gridsite
 %{py2_install}
 
 %post
-%systemd_post
+%systemd_post httpd.service
 
 # Create the keyfiles if they don't already exist.
 if [ ! -e /etc/x509-scitokens-issuer/issuer_key.pem ]; then
+  touch /etc/x509-scitokens-issuer/issuer_key.pem
+  chmod 640 /etc/x509-scitokens-issuer/issuer_key.pem
+  chown root:apache /etc/x509-scitokens-issuer/issuer_key.pem
   scitokens-admin-create-key --create-keys --pem-private > /etc/x509-scitokens-issuer/issuer_key.pem || :
 fi
 if [ ! -e /etc/x509-scitokens-issuer/issuer_key.jwks ]; then
+  touch /etc/x509-scitokens-issuer/issuer_key.jwks
+  chmod 640 /etc/x509-scitokens-issuer/issuer_key.jwks
+  chown root:apache: /etc/x509-scitokens-issuer/issuer_key.jwks
   scitokens-admin-create-key --private-keyfile /etc/x509-scitokens-issuer/issuer_key.pem --jwks-private > /etc/x509-scitokens-issuer/issuer_key.jwks || :
 fi
 if [ ! -e /etc/x509-scitokens-issuer/issuer_public.jwks ]; then
-  scitokens-admin-create-key --private-keyfile /etc/x509-scitokens-issuer/issuer_key.jwks --jwks-public > /etc/x509-scitokens-issuer/issuer_public.jwks || :
+  touch /etc/x509-scitokens-issuer/issuer_public.jwks
+  chmod 640 /etc/x509-scitokens-issuer/issuer_public.jwks
+  chown root:apache /etc/x509-scitokens-issuer/issuer_public.jwks
+  scitokens-admin-create-key --private-keyfile /etc/x509-scitokens-issuer/issuer_key.pem --jwks-public > /etc/x509-scitokens-issuer/issuer_public.jwks || :
 fi
 
 %postun
-%systemd_postun
+%systemd_postun httpd.service
 
 %files
 %doc README.md
+%{_sysconfdir}/%{name}
+%{_sysconfdir}/httpd/conf.d/x509_scitokens_issuer.conf
 %{_bindir}/cms-update-mapping
 %{python2_sitelib}/x509_scitokens_issuer*
 %attr(0700, apache, apache) %dir %{_localstatedir}/cache/httpd/%{name}
 %attr(-, apache, apache) %{_localstatedir}/cache/httpd/%{name}/dn_mapping.json
-%{_sysconfdir}/%{name}
 %{_unitdir}/cms-mapping-updater.service
 %{_unitdir}/cms-mapping-updater.timer
 %{_datarootdir}/%{name}/x509_scitokens_issuer.cfg
-%{_sysconfdir}/httpd/conf.d/x509_scitokens_issuer.conf
+%{_datarootdir}/www/wsgi-scripts/%{name}.wsgi
 
 %changelog
