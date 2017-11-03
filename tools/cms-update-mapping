@@ -1,0 +1,76 @@
+#!/usr/bin/python
+
+import os
+import sys
+import json
+import requests
+import ConfigParser
+
+
+def configure_session():
+    euid = os.geteuid()
+    if euid == 0:
+        cert = '/etc/grid-security/hostcert.pem'
+        key = '/etc/grid-security/hostkey.pem'
+    else:
+        cert = '/tmp/x509up_u%d' % euid
+        key = '/tmp/x509up_u%d' % euid
+
+    cert = os.environ.get('X509_USER_PROXY', cert)
+    key = os.environ.get('X509_USER_PROXY', key)
+
+    session = requests.Session()
+
+    if os.path.exists(cert):
+        session.cert = cert
+    if os.path.exists(key):
+        session.cert = (cert, key)
+
+    ca_dir = os.environ.get("X509_CERT_DIR", "/etc/grid-security/certificates")
+    if os.path.exists(ca_dir):
+        session.verify = ca_dir
+    return session
+
+
+def load_sitedb():
+    """
+    Load DN -> username mapping from CMS SiteDB
+
+    Example SiteDB query from CLI:
+    curl --cert ~/.globus/usercert.pem --key ~/.globus/userkey.pem --capath /etc/grid-security/certificates/ -H 'Accept: application/json' https://cmsweb.cern.ch/sitedb/data/prod/people
+
+    Example response from CMS SiteDB:
+    {"desc": {"columns": ["username", "email", "forename", "surname", "dn", "phone1", "phone2", "im_handle"]},
+     "result": [
+        ["ebrondol", "erica.brondolin@cern.ch", "Erica", "Brondolin", "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=ebrondol/CN=735347/CN=Erica Brondolin", null, null, null],
+        ["jwseo", "jiwoong.seo@cern.ch", "Jiwoong", "Seo", "/DC=ch/DC=cern/OU=Organic Units/OU=Users/CN=jwseo/CN=741097/CN=Jiwoong Seo", null, null, null]
+      ]
+    }
+    """
+    with configure_session() as session:
+        response = session.get("https://cmsweb.cern.ch/sitedb/data/prod/people", headers={"Accept": "application/json"})
+    if response.status_code == requests.codes.ok:
+        print "Successfully queried SiteDB; response length %d" % len(response.text)
+    else:
+        print >> sys.stderr, "SiteDB request failed: %s" % response.text[:2048]
+        sys.exit(1)
+    response_json = json.loads(response.text)
+    if ('desc' not in response_json) or ('result' not in response_json) or ('columns' not in response_json['desc']):
+        print >> sys.stderr, "SiteDB returned an invalid response."
+        sys.exit(1)
+    columns = response_json['desc']['columns']
+    result = response_json['result']
+    try:
+       username_idx = columns.index("username")
+       dn_idx = columns.index("dn")
+    except ValueError:
+       print >> sys.stderr, "Columns missing mapping data."
+       sys.exit(1)
+    return dict([(entry[dn_idx], entry[username_idx]) for entry in result])
+
+def main():
+    dn_to_username = load_sitedb()
+    print dn_to_username
+
+if __name__ == '__main__':
+    main()
