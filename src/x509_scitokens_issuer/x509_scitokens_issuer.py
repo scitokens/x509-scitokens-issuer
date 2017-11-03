@@ -102,9 +102,9 @@ def regenerate_mappings():
         scope = rule.get("scope")
         if scope:
             scopes.append(scope)
-        if match.startswith("dn:")
+        if match.startswith("dn:"):
             rule_list.append((DNMatcher(match[3:]), scopes))
-        elif match.startswith("fqan:")
+        elif match.startswith("fqan:"):
             rule_list.append((FQANMatcher(match[5:]), scopes))
 
     users_fname = app.config.get("dn_mapping")
@@ -189,6 +189,7 @@ def token_issuer():
     requested_scopes = set([i for i in request.form.get("scopes", "").split() if i])
 
     creds = {}
+    dn_cred = None
     for key, val in request.environ.items():
         if key.startswith("GRST_CRED_AURI_"):
             entry_num = int(key[15:]) # 15 = len("GRST_CRED_AURI_")
@@ -197,6 +198,8 @@ def token_issuer():
     keys.sort()
     entries = []
     for key in keys:
+        if creds[key].startswith("dn:"):
+            dn_cred = creds[key]
         entries.append(creds[key])
 
     print entries
@@ -222,7 +225,11 @@ def token_issuer():
 
     token = scitokens.SciToken(key=app.config['issuer_key'])
     token['scp'] = " ".join(scopes)
-    serialized_token = token.serialize(issuer = app.config['issuer'], lifetime = app.config['lifetime']
+    if user:
+        token['sub'] = user
+    else:
+        token['sub'] = dn_cred
+    serialized_token = token.serialize(issuer = app.config['issuer'], lifetime = app.config['lifetime'])
 
     # TODO: Return JSON as requested.
     return serialized_token

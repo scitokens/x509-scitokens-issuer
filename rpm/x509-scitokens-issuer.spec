@@ -22,9 +22,10 @@ Requires:       gridsite
 %setup
 
 %build
+%{py2_build}
 
 %install
-python2 setup.py install
+%{py2_install}
 
 %post
 %systemd_post
@@ -43,8 +44,8 @@ fi
 %postun
 %systemd_postun
 
-%files -n python2-%{pypi_name}
-%doc README.rst
+%files
+%doc README.md
 %{_bindir}/cms_update_mapping
 %{python2_sitelib}/x509_scitokens_issuer*
 %attr(0700, apache, apache) %dir %{_localstatedir}/cache/%{name}
