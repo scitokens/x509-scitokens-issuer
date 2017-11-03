@@ -4,8 +4,11 @@ import glob
 import json
 import time
 import urllib
+import urlparse
 import threading
 import traceback
+
+import scitokens
 
 from flask import Flask, request
 
@@ -15,22 +18,23 @@ app.updater_thread = None
 
 def _load_default_config():
     app.config.update({
-        "config_file_glob": "/etc/x509-scitokens-issuer/conf.d/*.cfg",
-        "lifetime": 3600,
-        "issuer_key": "/etc/x509-scitokens-issuer/issuer.json",
-        "rules": "/etc/x509-scitokens-issuer/rules.json",
-        "dn_mapping": "/var/cache/httpd/x509-scitokens-issuer/dn_mapping.json",
-        "enabled": False
+        "CONFIG_FILE_GLOB": "/etc/x509-scitokens-issuer/conf.d/*.cfg",
+        "LIFETIME": 3600,
+        "ISSUER_KEY": "/etc/x509-scitokens-issuer/issuer_key.pem",
+        "RULES": "/etc/x509-scitokens-issuer/rules.json",
+        "DN_MAPPING": "/var/cache/httpd/x509-scitokens-issuer/dn_mapping.json",
+        "ENABLED": False
     })
     app.config.from_pyfile("x509_scitokens_issuer.cfg")
-    config_glob = str(app.config['config_file_glob'])
+    config_glob = str(app.config['CONFIG_FILE_GLOB'])
     files = glob.glob(config_glob)
     files.sort()
     for fname in files:
+        print "Loading configuration file %s" % fname
         app.config.from_pyfile(fname)
 
 _load_default_config()
-print "Loading X509 SciTokens issuer with the following config: %s", str(app.config)
+print "Loading X509 SciTokens issuer with the following config: %s" % str(app.config)
 
 class InvalidFQAN(Exception):
     pass
@@ -104,7 +108,7 @@ def regenerate_mappings():
     """
     Generate the mappings.
     """
-    rules_fname = app.config["rules"]
+    rules_fname = app.config["RULES"]
     rule_list = []
     with open(rules_fname, "r") as fp:
         contents = json.load(fp)
@@ -120,7 +124,7 @@ def regenerate_mappings():
         elif match.startswith("fqan:"):
             rule_list.append((FQANMatcher(match[5:]), scopes))
 
-    users_fname = app.config.get("dn_mapping")
+    users_fname = app.config.get("DN_MAPPING")
     if users_fname:
         users_mapping = {}
         with open(users_fname, "r") as fp:
@@ -139,12 +143,12 @@ def update_app():
 
     app.users_mapping = users_mapping
     app.rules = rule_list
-    if app.config['enabled'] == False:
-        raise Exception("Application is not currently enabled.")
     print "Users mapping:", app.users_mapping
     print "App rules:", app.rules
 
 def launch_updater_thread():
+    if not app.config['ENABLED']:
+        raise Exception("Application is not currently enabled.")
     def updater_target(repeat=True):
         try:
             update_app()
@@ -169,7 +173,7 @@ def generate_formats(cred):
             info["username"] = username
     return info
 
-def generate_scopes(grst_creds):
+def generate_scopes_and_user(grst_creds):
     scopes = []
     user = None
     for rule in app.rules:
@@ -212,12 +216,18 @@ def limit_scope(issued_scope, requested_scope):
     if requested_resource.startswith(issued_resource):
         return "%s:%s" % (issued_authz, requested_resource)
 
+def return_oauth_error_response(error):
+    resp = app.response_class(response=json.dumps({"error": str(error)}), mimetype='application/json', status=400)
+    resp.headers['Cache-Control'] = 'no-store'
+    resp.headers['Pragma'] = 'no-cache'
+    return resp
+
 @app.route("/token", methods=["POST"])
 def token_issuer():
 
     # Currently, we only support the client_credentials grant type.
     if request.form.get("grant_type") != "client_credentials":
-        return "Incorrect grant_type; 'client_credentials' must be used."
+        return return_oauth_error_response("Incorrect grant_type; 'client_credentials' must be used.")
     requested_scopes = set([i for i in request.form.get("scopes", "").split() if i])
 
     creds = {}
@@ -234,8 +244,12 @@ def token_issuer():
             dn_cred = creds[key]
         entries.append(creds[key])
 
+    if not dn_cred:
+        return return_oauth_error_response("No client certificate or proxy used for TLS authentication.")
+
+    print request.environ
     print entries
-    scopes, user = generate_scope_and_user(entries)
+    scopes, user = generate_scopes_and_user(entries)
     print scopes
     print user
 
@@ -255,14 +269,26 @@ def token_issuer():
         if requested_scopes != updated_scopes:
             return_updated_scopes = True
 
-    token = scitokens.SciToken(key=app.config['issuer_key'])
+    token = scitokens.SciToken(key=app.config['ISSUER_KEY'])
     token['scp'] = " ".join(scopes)
     if user:
         token['sub'] = user
     else:
         token['sub'] = dn_cred
-    serialized_token = token.serialize(issuer = app.config['issuer'], lifetime = app.config['lifetime'])
+    if 'ISSUER' in app.config:
+        issuer = app.config['ISSUER']
+    else:
+        split = urlparse.SplitResult(scheme="https", netloc=request.environ['HTTP_HOST'], path=request.environ['REQUEST_URI'], query="/token", fragment="")
+        issuer = urlparse.urlunsplit(split)
+    serialized_token = token.serialize(issuer = issuer, lifetime = app.config['LIFETIME'])
 
-    # TODO: Return JSON as requested.
-    return serialized_token
+    json_response = {"access_token": serialized_token,
+                     "token_type": "bearer",
+                    }
+    if return_updated_scopes:
+        json_response["scope"] = " ".join(scopes)
+    resp = app.response_class(response=json.dumps(json_response), mimetype='application/json', status=400)
+    resp.headers['Cache-Control'] = 'no-store'
+    resp.headers['Pragma'] = 'no-cache'
+    return resp
 
