@@ -3,7 +3,9 @@
 import os
 import sys
 import json
+import pprint
 import requests
+import tempfile
 import ConfigParser
 
 
@@ -70,7 +72,18 @@ def load_sitedb():
 
 def main():
     dn_to_username = load_sitedb()
-    print dn_to_username
+    output_fname = None
+    if len(sys.argv) > 1:
+        output_fname = sys.argv[1]
+    output_fname = os.environ.get("CMS_MAPPING_FILE", output_fname)
+    if output_fname:
+        dpath, fname = os.path.split(output_fname)
+        with tempfile.NamedTemporaryFile(prefix=fname, dir=dpath, delete=False) as tfile:
+            json.dump(dn_to_username, tfile)
+        os.chmod(tfile.name, 0644)
+        os.rename(tfile.name, output_fname)
+    else:
+        pprint.pprint(dn_to_username)
 
 if __name__ == '__main__':
     main()

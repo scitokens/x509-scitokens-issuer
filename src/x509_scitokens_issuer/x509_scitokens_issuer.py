@@ -1,6 +1,7 @@
 
 import re
 import glob
+import json
 import time
 import urllib
 import threading
@@ -17,7 +18,8 @@ def _load_default_config():
         "config_file_glob": "/etc/x509-scitokens-issuer/conf.d/*.cfg",
         "lifetime": 3600,
         "issuer_key": "/etc/x509-scitokens-issuer/issuer.json",
-        "rules_mapping": "/etc/x509-scitokens-issuer/rules.json",
+        "rules": "/etc/x509-scitokens-issuer/rules.json",
+        "dn_mapping": "/var/cache/httpd/x509-scitokens-issuer/dn_mapping.json",
         "enabled": False
     })
     app.config.from_pyfile("x509_scitokens_issuer.cfg")
@@ -28,6 +30,7 @@ def _load_default_config():
         app.config.from_pyfile(fname)
 
 _load_default_config()
+print "Loading X509 SciTokens issuer with the following config: %s", str(app.config)
 
 class InvalidFQAN(Exception):
     pass
@@ -101,7 +104,7 @@ def regenerate_mappings():
     """
     Generate the mappings.
     """
-    rules_fname = app.config.get("rules_mapping")
+    rules_fname = app.config["rules"]
     rule_list = []
     with open(rules_fname, "r") as fp:
         contents = json.load(fp)
@@ -118,10 +121,13 @@ def regenerate_mappings():
             rule_list.append((FQANMatcher(match[5:]), scopes))
 
     users_fname = app.config.get("dn_mapping")
-    users_mapping = {}
-    with open(users_fname, "r") as fp:
-        contents = json.load(fp)
-        users_mapping = contents
+    if users_fname:
+        users_mapping = {}
+        with open(users_fname, "r") as fp:
+            contents = json.load(fp)
+            users_mapping = contents
+    else:
+        users_mapping = {}
     return rule_list, users_mapping
 
 
