@@ -22,7 +22,7 @@ def _load_default_config():
     app.config.update({
         "CONFIG_FILE_GLOB": "/etc/x509-scitokens-issuer/conf.d/*.cfg",
         "LIFETIME": 3600,
-        "ISSUER_KEY": "/etc/x509-scitokens-issuer/issuer_key.pem",
+        "ISSUER_KEY": "/etc/x509-scitokens-issuer/issuer_key.jwks",
         "RULES": "/etc/x509-scitokens-issuer/rules.json",
         "DN_MAPPING": "/var/cache/httpd/x509-scitokens-issuer/dn_mapping.json",
         "ENABLED": False
@@ -48,7 +48,7 @@ class FQANMatcher(object):
     """
 
     def __init__(self, fqan_glob):
-        group, role = parse_fqan(fqan_glob)
+        group, role = self.parse_fqan(fqan_glob)
         self.group = group
         self.role = role
 
@@ -70,8 +70,8 @@ class FQANMatcher(object):
         if group_pieces[0] != "":
             raise InvalidFQAN("FQAN must start with '/'")
         group_pieces = group_pieces[1:]
-        for group_name in group_names:
-            if not FQANMatcher._GROUP_FILTER.matches(group_name):
+        for group_name in group_pieces:
+            if not FQANMatcher._GROUP_FILTER.match(group_name):
                 raise InvalidFQAN("FQAN contains invalid group name: %s" % group_name)
         group = "/" + "/".join(group_pieces)
         return group, role
@@ -81,7 +81,7 @@ class FQANMatcher(object):
             return False
 
         grst_fqan = urllib.unquote_plus(grst_fqan[5:])
-        grst_group, grst_role = parse_fqan(grst_fqan)
+        grst_group, grst_role = self.parse_fqan(grst_fqan)
 
         if not grst_group.startswith(self.group):
             return False
@@ -122,9 +122,9 @@ def regenerate_mappings():
         if scope:
             scopes.append(scope)
         if match.startswith("dn:"):
-            rule_list.append((DNMatcher(match[3:]), scopes))
+            rule_list.append((DNMatcher(urllib.unquote_plus(match[3:])), scopes))
         elif match.startswith("fqan:"):
-            rule_list.append((FQANMatcher(match[5:]), scopes))
+            rule_list.append((FQANMatcher(urllib.unquote_plus(match[5:])), scopes))
 
     users_fname = app.config.get("DN_MAPPING")
     if users_fname:
@@ -142,7 +142,7 @@ def update_app():
 
     app.users_mapping = users_mapping
     app.rules = rule_list
-    print "Users mapping:", app.users_mapping
+    print "Users mapping has %d rules" % len(app.users_mapping)
     print "App rules:", app.rules
 
     with open(app.config['ISSUER_KEY'], 'r') as fd:
@@ -176,22 +176,29 @@ launch_updater_thread()
 def generate_formats(cred):
     info = {}
     if cred.startswith("dn:"):
-        username = app.users_mapping.get(cred[3:])
+        dn = urllib.unquote_plus(cred[3:])
+        username = app.users_mapping.get(urllib.unquote_plus(cred[3:]))
         if username:
             info["username"] = username
     return info
 
 def generate_scopes_and_user(grst_creds):
-    scopes = []
+    scopes = set()
     user = None
+    format_info = None
+    for cred in grst_creds:
+        format_info = generate_formats(cred)
+        if not user and ('username' in format_info):
+            user = format_info['username']
+            break
     for rule in app.rules:
         for cred in grst_creds:
            if rule[0].matches(cred):
-               for scope in rules[1]:
-                   format_info = generate_formats(cred)
-                   if not user and ('username' in format_info):
-                       user = format_info['username']
-                   scopes.append(scope.format(**format_info))
+               for scope in rule[1]:
+                   try:
+                      scopes.add(scope.format(**format_info))
+                   except KeyError:
+                      pass
     return scopes, user
 
 def limit_scope(issued_scope, requested_scope):
@@ -248,18 +255,18 @@ def token_issuer():
     keys.sort()
     entries = []
     for key in keys:
-        if creds[key].startswith("dn:"):
-            dn_cred = creds[key]
+        if not dn_cred and creds[key].startswith("dn:"):
+            dn_cred = creds[key][3:]
         entries.append(creds[key])
 
     if not dn_cred:
         return return_oauth_error_response("No client certificate or proxy used for TLS authentication.")
+    dn_cred = urllib.unquote_plus(dn_cred)
 
-    print request.environ
-    print entries
+    #print entries
     scopes, user = generate_scopes_and_user(entries)
-    print scopes
-    print user
+    #print scopes
+    #print user
 
     # Compare the generated scopes against the requested scopes (if given)
     # If we don't give the user everything they want, then we 
@@ -273,11 +280,11 @@ def token_issuer():
                     updated_scopes.add(new_scope)
                     if new_scope != requested_scope:
                         changed_any_scope = True
-        scopes = list(updated_scopes)
+        scopes = set(updated_scopes)
         if requested_scopes != updated_scopes:
             return_updated_scopes = True
 
-    token = scitokens.SciToken(key=app.config['ISSUER_KEY'])
+    token = scitokens.SciToken(key=app.issuer_key)
     token['scp'] = " ".join(scopes)
     if user:
         token['sub'] = user
@@ -286,7 +293,7 @@ def token_issuer():
     if 'ISSUER' in app.config:
         issuer = app.config['ISSUER']
     else:
-        split = urlparse.SplitResult(scheme="https", netloc=request.environ['HTTP_HOST'], path=request.environ['REQUEST_URI'], query="/token", fragment="")
+        split = urlparse.SplitResult(scheme="https", netloc=request.environ['HTTP_HOST'], path=request.environ['REQUEST_URI'], query="", fragment="")
         issuer = urlparse.urlunsplit(split)
     serialized_token = token.serialize(issuer = issuer, lifetime = app.config['LIFETIME'])
 

@@ -2,10 +2,26 @@
 Various helper utility functions for the x509_scitokens_issuer package
 """
 
+import base64
+
+import cryptography.utils
 import cryptography.hazmat.primitives.asymmetric.rsa as rsa
 import cryptography.hazmat.primitives.asymmetric.ec as ec
 from cryptography.hazmat.backends import default_backend
 import scitokens
+
+def decode_base64(data):
+    """Decode base64, padding being optional.
+
+    :param data: Base64 data as an ASCII byte string
+    :returns: The decoded byte string.
+
+    """
+    missing_padding = len(data) % 4
+    if missing_padding != 0:
+        data += b'='* (4 - missing_padding)
+
+    return base64.urlsafe_b64decode(data)
 
 def long_from_bytes(data):
     """
@@ -22,7 +38,7 @@ def load_jwks(jwks_obj):
     return a python-cryptography private key object
     """
 
-    if raw_key['kty'] == "RSA":
+    if jwks_obj['kty'] == "RSA":
         n = long_from_bytes(jwks_obj['n'])
         e = long_from_bytes(jwks_obj['e'])
         d = long_from_bytes(jwks_obj['d'])
@@ -58,8 +74,8 @@ def load_jwks(jwks_obj):
             iqmp = qi,
             public_numbers = public_key_numbers
         )
-        return private_key_numbers.private_key()
-    elif raw_key['kty'] == 'EC':
+        return private_key_numbers.private_key(default_backend())
+    elif jwks_obj['kty'] == 'EC':
         public_key_numbers = ec.EllipticCurvePublicNumbers(
             long_from_bytes(jwks_obj['x']),
             long_from_bytes(jwks_obj['y']),
@@ -69,7 +85,7 @@ def load_jwks(jwks_obj):
             long_from_bytes(jwks_obj['d']),
             public_key_numbers
         )
-        return private_key_numbers.private_key()
+        return private_key_numbers.private_key(default_backend())
     else:
         raise scitokens.scitokens.UnsupportedKeyException("Issuer public key not supported.")
 
