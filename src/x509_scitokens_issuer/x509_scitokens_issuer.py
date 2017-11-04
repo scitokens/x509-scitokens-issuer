@@ -9,12 +9,14 @@ import threading
 import traceback
 
 import scitokens
+import utils as x509_utils
 
 from flask import Flask, request
 
 # Load the application and configuration defaults.
 app = Flask(__name__, instance_path="/usr/share/x509-scitokens-issuer", instance_relative_config=True)
 app.updater_thread = None
+app.issuer_key = None
 
 def _load_default_config():
     app.config.update({
@@ -136,15 +138,21 @@ def regenerate_mappings():
 
 
 def update_app():
-    try:
-        rule_list, users_mapping = regenerate_mappings()
-    except:
-        raise
+    rule_list, users_mapping = regenerate_mappings()
 
     app.users_mapping = users_mapping
     app.rules = rule_list
     print "Users mapping:", app.users_mapping
     print "App rules:", app.rules
+
+    with open(app.config['ISSUER_KEY'], 'r') as fd:
+        json_obj = json.load(fd)
+    if 'keys' not in json_obj:
+        raise Exception("No JWKS key present!")
+    # TODO: I would be OK with the configuration file passing the KID
+    if len(json_obj['keys']) != 1:
+        raise Exception("JWKS key file must contain precisely one key")
+    app.issuer_key = x509_utils.load_jwks(json_obj['keys'][0])
 
 def launch_updater_thread():
     if not app.config['ENABLED']:
