@@ -61,6 +61,7 @@ fi
 %config(noreplace) %{_sysconfdir}/%{name}/rules.json
 %config(noreplace) %{_sysconfdir}/httpd/conf.d/x509_scitokens_issuer.conf
 %{_bindir}/cms-update-mapping
+%{_bindir}/cms-scitoken-init
 %{python2_sitelib}/x509_scitokens_issuer*
 %attr(0700, apache, apache) %dir %{_localstatedir}/cache/httpd/%{name}
 %ghost %attr(-, apache, apache) %{_localstatedir}/cache/httpd/%{name}/dn_mapping.json
