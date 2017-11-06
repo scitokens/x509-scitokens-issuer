@@ -232,7 +232,7 @@ def limit_scope(issued_scope, requested_scope):
         return "%s:%s" % (issued_authz, requested_resource)
 
 def return_oauth_error_response(error):
-    resp = app.response_class(response=json.dumps({"error": str(error)}), mimetype='application/json', status=400)
+    resp = app.response_class(response=json.dumps({"error": str(error)}), mimetype='application/json', status=requests.codes.bad_request)
     resp.headers['Cache-Control'] = 'no-store'
     resp.headers['Pragma'] = 'no-cache'
     return resp
@@ -299,10 +299,11 @@ def token_issuer():
 
     json_response = {"access_token": serialized_token,
                      "token_type": "bearer",
+                     "expires_in": app.config['LIFETIME'],
                     }
     if return_updated_scopes:
         json_response["scope"] = " ".join(scopes)
-    resp = app.response_class(response=json.dumps(json_response), mimetype='application/json', status=400)
+    resp = app.response_class(response=json.dumps(json_response), mimetype='application/json', status=requests.codes.ok)
     resp.headers['Cache-Control'] = 'no-store'
     resp.headers['Pragma'] = 'no-cache'
     return resp
