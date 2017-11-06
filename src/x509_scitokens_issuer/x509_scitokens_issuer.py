@@ -152,6 +152,7 @@ def update_app():
     # TODO: I would be OK with the configuration file passing the KID
     if len(json_obj['keys']) != 1:
         raise Exception("JWKS key file must contain precisely one key")
+    app.issuer_kid = json_obj['keys'][0]['kid']
     app.issuer_key = x509_utils.load_jwks(json_obj['keys'][0])
 
 def launch_updater_thread():
@@ -284,8 +285,8 @@ def token_issuer():
         if requested_scopes != updated_scopes:
             return_updated_scopes = True
 
-    token = scitokens.SciToken(key=app.issuer_key)
-    token['scp'] = " ".join(scopes)
+    token = scitokens.SciToken(key=app.issuer_key, key_id=app.issuer_kid)
+    token['scp'] = list(scopes)
     if user:
         token['sub'] = user
     else:
