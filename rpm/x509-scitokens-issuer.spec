@@ -1,6 +1,6 @@
 Name:           x509-scitokens-issuer
-Version:        0.1.0
-Release:        0%{?dist}
+Version:        0.2.0
+Release:        1%{?dist}
 Summary:        SciTokens issuer based on X509 authentication.
 
 License:        Apache 2.0
@@ -71,3 +71,7 @@ fi
 %{_localstatedir}/www/wsgi-scripts/%{name}.wsgi
 
 %changelog
+* Mon Nov 06 2017 Brian Bockelman <bbockelm@cse.unl.edu> - 0.2.0-1
+- Add tool for generating SciToken.
+- Fix various small packaging errors.
+
