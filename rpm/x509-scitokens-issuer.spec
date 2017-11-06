@@ -72,6 +72,9 @@ fi
 
 %changelog
 * Mon Nov 06 2017 Brian Bockelman <bbockelm@cse.unl.edu> - 0.2.0-1
+- Fix issuing of JSON-formatted scp.
+
+* Mon Nov 06 2017 Brian Bockelman <bbockelm@cse.unl.edu> - 0.2.0-1
 - Add tool for generating SciToken.
 - Fix various small packaging errors.
 
