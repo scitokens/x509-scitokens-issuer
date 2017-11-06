@@ -40,7 +40,7 @@ fi
 if [ ! -e /etc/x509-scitokens-issuer/issuer_key.jwks ]; then
   touch /etc/x509-scitokens-issuer/issuer_key.jwks
   chmod 640 /etc/x509-scitokens-issuer/issuer_key.jwks
-  chown root:apache: /etc/x509-scitokens-issuer/issuer_key.jwks
+  chown root:apache /etc/x509-scitokens-issuer/issuer_key.jwks
   scitokens-admin-create-key --private-keyfile /etc/x509-scitokens-issuer/issuer_key.pem --jwks-private > /etc/x509-scitokens-issuer/issuer_key.jwks || :
 fi
 if [ ! -e /etc/x509-scitokens-issuer/issuer_public.jwks ]; then
@@ -62,8 +62,8 @@ fi
 %config(noreplace) %{_sysconfdir}/httpd/conf.d/x509_scitokens_issuer.conf
 %{_bindir}/cms-update-mapping
 %{python2_sitelib}/x509_scitokens_issuer*
-%ghost %attr(0700, apache, apache) %dir %{_localstatedir}/cache/httpd/%{name}
-%attr(-, apache, apache) %{_localstatedir}/cache/httpd/%{name}/dn_mapping.json
+%attr(0700, apache, apache) %dir %{_localstatedir}/cache/httpd/%{name}
+%ghost %attr(-, apache, apache) %{_localstatedir}/cache/httpd/%{name}/dn_mapping.json
 %{_unitdir}/cms-mapping-updater.service
 %{_unitdir}/cms-mapping-updater.timer
 %{_datarootdir}/%{name}/x509_scitokens_issuer.cfg
