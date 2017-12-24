@@ -38,11 +38,18 @@ add_library(X509SciTokensIssuer SHARED src/x509_scitokens_issuer.cpp)
 target_link_libraries(X509SciTokensIssuer -ldl ${Boost_PYTHON_LIBRARY} ${PYTHON_LIBRARIES})
 set_target_properties(X509SciTokensIssuer PROPERTIES LINK_FLAGS "-Wl,--version-script=${CMAKE_SOURCE_DIR}/configs/export-lib-symbols")
 
+add_executable(cms-scitokens-init tools/cms-scitoken-init.cpp)
+target_link_libraries(cms-scitokens-init -ldl)
+
 SET(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Install path for libraries")
 
 install(
   TARGETS X509SciTokensIssuer
   LIBRARY DESTINATION ${LIB_INSTALL_DIR})
+
+install(
+  TARGETS cms-scitokens-init
+  DESTINATION bin)
 
 install(
   FILES ${CMAKE_SOURCE_DIR}/src/x509_scitokens_issuer_client.py

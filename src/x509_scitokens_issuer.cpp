@@ -7,16 +7,37 @@
 #include <dlfcn.h>
 #include <string.h>
 
+
 static bool g_initialized = false;
 static std::mutex g_mutex;
 static boost::python::object g_module;
 
 
-extern"C" bool
-x509_scitokens_issuer_init()
+static std::string
+handle_pyerror()
 {
+    PyObject *exc,*val,*tb;
+    boost::python::object formatted_list, formatted;
+    PyErr_Fetch(&exc,&val,&tb);
+    boost::python::handle<> hexc(exc), hval(boost::python::allow_null(val)), htb(boost::python::allow_null(tb));
+    boost::python::object traceback(boost::python::import("traceback"));
+    boost::python::object format_exception(traceback.attr("format_exception"));
+    formatted_list = format_exception(hexc,hval,htb);
+    formatted = boost::python::str("\n").join(formatted_list);
+    return boost::python::extract<std::string>(formatted);
+}
+
+
+extern"C" int
+x509_scitokens_issuer_init(char **err)
+{
+    *err = nullptr;
+
     std::lock_guard<std::mutex> guard(g_mutex);
-    if (g_initialized) {return true;}
+    if (g_initialized)
+    {
+        return 0;
+    }
 
     if (!Py_IsInitialized())
     {
@@ -35,7 +56,14 @@ x509_scitokens_issuer_init()
     void *handle = dlopen("libX509SciTokensIssuer.so", RTLD_GLOBAL|RTLD_NODELETE|RTLD_NOLOAD|RTLD_LAZY);
     if (handle == nullptr)
     {
-        return false;
+        const char *dlopen_error = dlerror();
+        if (dlopen_error == nullptr) {dlopen_error = "(unknown)";}
+        const char *error_prefix = "Failed to reload internal library: ";
+        int full_length = strlen(error_prefix) + strlen(dlopen_error) + 1;
+        *err = static_cast<char*>(malloc(full_length));
+        strcat(*err, error_prefix);
+        strcat(*err, dlopen_error);
+        return 1;
     }
     dlclose(handle);
 
@@ -45,16 +73,24 @@ x509_scitokens_issuer_init()
     }
     catch (boost::python::error_already_set)
     {
-        return false;
+        std::string errmsg = handle_pyerror();
+        *err = strdup(errmsg.c_str());
+        return 1;
     }
-    return true;
+    return 0;
 }
 
 
 extern "C" char *
-x509_scitokens_issuer_retrieve(const char *issuer, const char *cert, const char *key)
+x509_scitokens_issuer_retrieve(const char *issuer, const char *cert, const char *key,
+                               char **err)
 {
-    if (!issuer) {return nullptr;}
+    *err = nullptr;
+
+    if (!issuer)
+    {
+        return nullptr;
+    }
     std::lock_guard<std::mutex> guard(g_mutex);
 
     boost::python::object py_cert;
@@ -70,12 +106,15 @@ x509_scitokens_issuer_retrieve(const char *issuer, const char *cert, const char 
     std::string token;
     try
     {
-        boost::python::object retval =
-            g_module.attr("get_token")(py_issuer, py_cert, py_key)["access_token"];
+        boost::python::object retval = boost::python::str(
+                g_module.attr("get_token")(py_issuer, py_cert, py_key)["access_token"]
+            );
         token = boost::python::extract<std::string>(retval);
     }
     catch (boost::python::error_already_set)
     {
+        std::string errmsg = handle_pyerror();
+        *err = strdup(errmsg.c_str());
         return nullptr;
     }
     return strdup(token.c_str());
