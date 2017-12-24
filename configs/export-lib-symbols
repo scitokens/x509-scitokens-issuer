@@ -1,0 +1,7 @@
+{
+global:
+  x509_scitokens_issuer*;
+
+local:
+  *;
+};
