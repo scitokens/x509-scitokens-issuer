@@ -1,12 +1,14 @@
 Name:           x509-scitokens-issuer
-Version:        0.2.0
+Version:        0.3.0
 Release:        1%{?dist}
 Summary:        SciTokens issuer based on X509 authentication.
 
 License:        Apache 2.0
 URL:            https://scitokens.org
+
+# Generated from:
+# git archive v%{version} --prefix=%{name}-%{version}/ | gzip -7 > ~/rpmbuild/SOURCES/x509-scitokens-issuer-%{version}.tar.gz
 Source0:        %{name}-%{version}.tar.gz
-BuildArch:      noarch
  
 %{?systemd_requires}
 
@@ -18,14 +20,25 @@ Requires:       gridsite
 %description
 %{summary}
 
+%package client
+Summary:        Client for X509-based token issuer
+
+Requires:       python-requests
+
+%description client
+A client library for the x509-scitokens-issuer.
+
 %prep
 %setup
 
 %build
 %{py2_build}
+%cmake .
 
 %install
+make install DESTDIR=%{buildroot}
 %{py2_install}
+rm %{buildroot}%{_bindir}/cms-scitokens-init
 
 %post
 %systemd_post httpd.service
@@ -50,8 +63,14 @@ if [ ! -e /etc/x509-scitokens-issuer/issuer_public.jwks ]; then
   scitokens-admin-create-key --private-keyfile /etc/x509-scitokens-issuer/issuer_key.pem --jwks-public > /etc/x509-scitokens-issuer/issuer_public.jwks || :
 fi
 
+%post client
+/sbin/ldconfig
+
 %postun
 %systemd_postun httpd.service
+
+%postun client
+/sbin/ldconfig
 
 %files
 %doc README.md
@@ -70,7 +89,14 @@ fi
 %{_datarootdir}/%{name}/x509_scitokens_issuer.cfg
 %{_localstatedir}/www/wsgi-scripts/%{name}.wsgi
 
+%files client
+%{python2_sitearch}/x509_scitokens_issuer_client.py*
+%{_libdir}/libX509SciTokensIssuer.so
+
 %changelog
+* Fri Dec 29 2017 Brian Bockelman <bbockelm@cse.unl.edu> - 0.3.0-1
+- Add C library interface for the token retrieval.
+
 * Mon Nov 06 2017 Brian Bockelman <bbockelm@cse.unl.edu> - 0.2.0-1
 - Fix issuing of JSON-formatted scp.
 
