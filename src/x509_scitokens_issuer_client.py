@@ -145,6 +145,18 @@ def get_macaroon(url, cert=None, key=None, validity=5, activity=None):
     contain the macaroon in the `macaroon` key.
     """
 
+    # Normalize URL to get rid of the fake "davs" scheme.
+    split_result = urlparse.urlsplit(url)
+    scheme = split_result.scheme
+    if scheme == "davs":
+        scheme = "https"
+    url = urlparse.urlunsplit(urlparse.SplitResult(scheme=scheme,
+                                                   netloc=split_result.netloc,
+                                                   path=split_result.path,
+                                                   query="",
+                                                   fragment="")
+                             )
+
     if validity <= 0:
         TokenArgumentException("Validity period must be a positive integer.")
 
