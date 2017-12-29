@@ -27,6 +27,12 @@ class TokenIssuerException(TokenException):
     Class for errors related to token issuance.
     """
 
+class TokenArgumentException(TokenException):
+    """
+    Class for errors related to the parameters passed to the token
+    creation functions
+    """
+
 def __configure_authenticated_session(cert=None, key=None):
     """
     Generate a new session object for use with requests to the issuer.
@@ -119,4 +125,45 @@ def get_token(issuer, cert=None, key=None):
     """
     endpoint = __get_token_endpoint(issuer)
     return __generate_token(endpoint, cert=cert, key=key)
+
+def get_macaroon(url, cert=None, key=None, validity=5, activity=None):
+    """
+    Given a URL, try to retrieve a corresponding macaroon for its access.
+
+    - `url`: URL to generate the macaroon for.
+    - `cert`: Filename of the client certificate to use for the TLS connection to
+      the access token endpoint.
+    - `key`: Filename of the client key to use for the TLS connection to the
+      access token endpoint.
+    - `validity`: Time, in minutes, the macaroon should be valid for.
+    - `activity`: A list of activities the token should be authorized to perform.
+
+    If either `cert` or `key` are None, then the default GSI proxy discovery rules
+    will be utilized.
+
+    This returns a python dictionary describing the macaroon; the dictionary will
+    contain the macaroon in the `macaroon` key.
+    """
+
+    if validity <= 0:
+        TokenArgumentException("Validity period must be a positive integer.")
+
+    if not activity:
+        TokenArgumentException("At least one activity must be specified")
+
+    validity = "PT%dM" % validity
+
+    data_json = {"caveats": ["activity:%s" % ",".join(activity)],
+                 "validity": validity}
+    with __configure_authenticated_session(cert=cert, key=key) as session:
+        response = session.post(url,
+                                headers={"Content-Type": "application/macaroon-request"},
+                                data=json.dumps(data_json)
+                               )
+
+    if response.status_code == requests.codes.ok:
+        return json.loads(response.text)
+    else:
+        raise TokenIssuerException("Issuer failed request (status %d): %s" % \
+            (response.status_code, response.text[:2048]))
 

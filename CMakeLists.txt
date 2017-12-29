@@ -41,6 +41,9 @@ set_target_properties(X509SciTokensIssuer PROPERTIES LINK_FLAGS "-Wl,--version-s
 add_executable(cms-scitokens-init tools/cms-scitoken-init.cpp)
 target_link_libraries(cms-scitokens-init -ldl)
 
+add_executable(macaroon-init tools/macaroon-init.cpp)
+target_link_libraries(macaroon-init -ldl)
+
 SET(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Install path for libraries")
 
 install(
@@ -48,7 +51,7 @@ install(
   LIBRARY DESTINATION ${LIB_INSTALL_DIR})
 
 install(
-  TARGETS cms-scitokens-init
+  TARGETS cms-scitokens-init macaroon-init
   DESTINATION bin)
 
 install(

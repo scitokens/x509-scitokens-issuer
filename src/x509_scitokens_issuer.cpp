@@ -119,3 +119,66 @@ x509_scitokens_issuer_retrieve(const char *issuer, const char *cert, const char 
     }
     return strdup(token.c_str());
 }
+
+extern "C" char *
+x509_macaroon_issuer_retrieve(const char *url, const char *cert, const char *key,
+                              int validity, const char **activities, char **err)
+{
+    *err = nullptr;
+    if (!url)
+    {
+        *err = strdup("URL not specified.");
+        return nullptr;
+    }
+    if (!activities)
+    {
+        *err = strdup("Activities not provided.");
+        return nullptr;
+    }
+    if (validity <= 0)
+    {
+        *err = strdup("Validity must be a positive integer (in minutes)");
+        return nullptr;
+    }
+
+    // From here on out, we are invoking python, so grab the guard mutex.
+    std::lock_guard<std::mutex> guard(g_mutex);
+
+    boost::python::object py_cert;
+    if (cert) {
+        py_cert = boost::python::object(cert);
+    }
+    boost::python::object py_key;
+    if (key) {
+        py_key = boost::python::object(key);
+    }
+    boost::python::object py_url = boost::python::object(url);
+
+    boost::python::list activities_list;
+    for (int idx=0; activities[idx]; idx++)
+    {
+        boost::python::object activity_name =
+            boost::python::object(activities[idx]);
+        activities_list.append(activity_name);
+    }
+
+    std::string macaroon;
+    try
+    {
+        boost::python::object retval = boost::python::str(
+                g_module.attr("get_macaroon")(py_url,
+                                              py_cert,
+                                              py_key,
+                                              validity,
+                                              activities_list)["macaroon"]
+            );
+        macaroon = boost::python::extract<std::string>(retval);
+    }
+    catch (boost::python::error_already_set)
+    {
+        std::string errmsg = handle_pyerror();
+        *err = strdup(errmsg.c_str());
+        return nullptr;
+    }
+    return strdup(macaroon.c_str());
+}

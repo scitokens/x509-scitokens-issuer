@@ -12,6 +12,9 @@ Source0:        %{name}-%{version}.tar.gz
  
 %{?systemd_requires}
 
+BuildRequires:  python2-devel
+BuildRequires:  python2-setuptools
+
 Requires:       python2-scitokens
 Requires:       python-requests
 Requires:       httpd
