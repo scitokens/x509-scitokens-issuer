@@ -50,7 +50,7 @@ def get_token_endpoint(issuer):
     response = requests.get(config_url)
     endpoint_info = json.loads(response.text)
     if response.status_code != requests.codes.ok:
-        print >> sys.stderr, "Failed to access the auto-discovery URL (%s) for issuer %s (status=%d): %s" % (config_url, issuer, response.status, response.text[:2048])
+        print >> sys.stderr, "Failed to access the auto-discovery URL (%s) for issuer %s (status=%d): %s" % (config_url, issuer, response.status_code, response.text[:2048])
         sys.exit(1)
     elif 'token_endpoint' not in endpoint_info:
         print >> sys.stderr, "Token endpoint not available for issuer %s" % issuer
