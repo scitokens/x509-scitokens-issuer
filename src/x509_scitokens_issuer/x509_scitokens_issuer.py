@@ -28,6 +28,8 @@ def _load_default_config():
         "ENABLED": False
     })
     app.config.from_pyfile("x509_scitokens_issuer.cfg")
+    if os.environ.get('X509_SCITOKENS_ISSUER'):
+        app.config.from_envvar("X509_SCITOKENS_ISSUER")
     config_glob = str(app.config['CONFIG_FILE_GLOB'])
     files = glob.glob(config_glob)
     files.sort()
