@@ -12,6 +12,7 @@ Source0:        %{name}-%{version}.tar.gz
  
 %{?systemd_requires}
 
+BuildRequires:  cmake
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
 
