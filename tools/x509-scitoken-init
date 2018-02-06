@@ -1,0 +1,101 @@
+#!/usr/bin/python
+
+"""
+Given an X509 proxy, act as an OAuth client and generate a corresponding SciToken.
+"""
+
+import os
+import sys
+import json
+import urlparse
+import optparse
+import logging
+
+import requests
+
+def configure_authenticated_session():
+    """
+    Generate a new session object for use with requests to the issuer.
+
+    Configures TLS appropriately to work with a GSI environment.
+    """
+    euid = os.geteuid()
+    if euid == 0:
+        cert = '/etc/grid-security/hostcert.pem'
+        key = '/etc/grid-security/hostkey.pem'
+    else:
+        cert = '/tmp/x509up_u%d' % euid
+        key = '/tmp/x509up_u%d' % euid
+
+    cert = os.environ.get('X509_USER_PROXY', cert)
+    key = os.environ.get('X509_USER_PROXY', key)
+
+    session = requests.Session()
+
+    if os.path.exists(cert):
+        session.cert = cert
+    if os.path.exists(key):
+        session.cert = (cert, key)
+
+    return session
+
+
+def get_token_endpoint(issuer):
+    """
+    From the provided issuer, use OAuth auto-discovery to bootstrap the token endpoint.
+    """
+    if not issuer.endswith("/"):
+        issuer += "/"
+    config_url = urlparse.urljoin(issuer, ".well-known/openid-configuration")
+    response = requests.get(config_url)
+    if response.status_code != requests.codes.ok:
+        logging.error("Failed to access the auto-discovery URL (%s) for issuer %s (status=%d): %s" % (config_url, issuer, response.status_code, response.text[:512]))
+        sys.exit(1)
+    try:
+        endpoint_info = json.loads(response.text)
+    except:
+        logging.exception("Failure when loading JSON response from issuer auto-discovery: %s" % response.text[:2048])
+        sys.exit(1)
+    if 'token_endpoint' not in endpoint_info:
+        print >> sys.stderr, "Token endpoint not available for issuer %s" % issuer
+        sys.exit(1)
+    return endpoint_info['token_endpoint']
+
+
+def generate_token(endpoint):
+    """
+    Call out to the OAuth2 token issuer, using the client credentials
+    grant type, and receive a SciToken.
+    """
+    logging.debug("Querying %s for new token." % endpoint)
+    with configure_authenticated_session() as session:
+        response = session.post(endpoint, headers={"Accept": "application/json"},
+                                data={"grant_type": "client_credentials"})
+
+    if response.status_code == requests.codes.ok:
+        logging.debug("Successfully generated a new token:")
+        return response.text
+    else:
+        logging.error("Issuer failed request (status %d): %s" % (response.status_code, response.text[:2048]))
+        sys.exit(1)
+
+
+def main():
+    parser = optparse.OptionParser()
+    parser.add_option("-v", "--verbose", dest="verbose", default=False, action="store_true", help="Enable verbose output.")
+    opts, args = parser.parse_args()
+    if opts.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+
+    if len(args) != 1:
+        print "Must provide a token issuer to query (example: https://scitokens.org/dteam/)"
+        sys.exit(1)
+
+    issuer = args[0]
+    endpoint = get_token_endpoint(issuer)
+    token = generate_token(endpoint)
+    print token
+
+
+if __name__ == '__main__':
+    main()
