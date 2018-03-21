@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     {
         activities_list[idx] = argv[idx+3];
     }
-    activities_list[argc-3] = nullptr;
+    activities_list[argc-3] = NULL;
 
     int (*x509_scitokens_issuer_init_p)(char **);
     char *(*x509_macaroon_issuer_retrieve_p)(const char *,
