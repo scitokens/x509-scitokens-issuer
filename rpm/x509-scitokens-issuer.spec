@@ -13,6 +13,10 @@ Source0:        %{name}-%{version}.tar.gz
 %if 0%{?rhel} >= 7
 %{?systemd_requires}
 BuildRequires:  systemd
+%else
+# urllib3 on EPEL6 appears to have a missing dependency.  Pull it in
+# to get a working system.
+Requires: python-ndg_httpsclient
 %endif
 
 BuildRequires:  cmake
