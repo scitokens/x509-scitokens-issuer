@@ -31,7 +31,7 @@ handle_pyerror()
 extern"C" int
 x509_scitokens_issuer_init(char **err)
 {
-    *err = nullptr;
+    *err = NULL;
 
     std::lock_guard<std::mutex> guard(g_mutex);
     if (g_initialized)
@@ -41,8 +41,10 @@ x509_scitokens_issuer_init(char **err)
 
     if (!Py_IsInitialized())
     {
+#if PY_MAJOR_VERSION <= 2
         char pname[] = "x509_scitokens_issuer";
         Py_SetProgramName(pname);
+#endif
         Py_InitializeEx(0);
     }
 
@@ -54,10 +56,10 @@ x509_scitokens_issuer_init(char **err)
     //   - RTLD_NODELETE instructs the loader to not unload this library -- we need
     //     python kept in memory!
     void *handle = dlopen("libX509SciTokensIssuer.so", RTLD_GLOBAL|RTLD_NODELETE|RTLD_NOLOAD|RTLD_LAZY);
-    if (handle == nullptr)
+    if (handle == NULL)
     {
         const char *dlopen_error = dlerror();
-        if (dlopen_error == nullptr) {dlopen_error = "(unknown)";}
+        if (dlopen_error == NULL) {dlopen_error = "(unknown)";}
         const char *error_prefix = "Failed to reload internal library: ";
         int full_length = strlen(error_prefix) + strlen(dlopen_error) + 1;
         *err = static_cast<char*>(malloc(full_length));
@@ -85,11 +87,11 @@ extern "C" char *
 x509_scitokens_issuer_retrieve(const char *issuer, const char *cert, const char *key,
                                char **err)
 {
-    *err = nullptr;
+    *err = NULL;
 
     if (!issuer)
     {
-        return nullptr;
+        return NULL;
     }
     std::lock_guard<std::mutex> guard(g_mutex);
 
@@ -115,7 +117,7 @@ x509_scitokens_issuer_retrieve(const char *issuer, const char *cert, const char 
     {
         std::string errmsg = handle_pyerror();
         *err = strdup(errmsg.c_str());
-        return nullptr;
+        return NULL;
     }
     return strdup(token.c_str());
 }
@@ -124,21 +126,21 @@ extern "C" char *
 x509_macaroon_issuer_retrieve(const char *url, const char *cert, const char *key,
                               int validity, const char **activities, char **err)
 {
-    *err = nullptr;
+    *err = NULL;
     if (!url)
     {
         *err = strdup("URL not specified.");
-        return nullptr;
+        return NULL;
     }
     if (!activities)
     {
         *err = strdup("Activities not provided.");
-        return nullptr;
+        return NULL;
     }
     if (validity <= 0)
     {
         *err = strdup("Validity must be a positive integer (in minutes)");
-        return nullptr;
+        return NULL;
     }
 
     // From here on out, we are invoking python, so grab the guard mutex.
@@ -178,7 +180,7 @@ x509_macaroon_issuer_retrieve(const char *url, const char *cert, const char *key
     {
         std::string errmsg = handle_pyerror();
         *err = strdup(errmsg.c_str());
-        return nullptr;
+        return NULL;
     }
     return strdup(macaroon.c_str());
 }

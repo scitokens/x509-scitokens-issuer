@@ -5,7 +5,7 @@ Install file for X509-authentication-based SciTokens issuer.
 import setuptools
 
 setuptools.setup(name="x509-scitokens-issuer",
-                 version="0.3.0",
+                 version="0.4.1",
                  description="SciTokens issuer based on X509/VOMS authentication",
                  author_email="team@scitokens.org",
                  author="Brian Bockelman",

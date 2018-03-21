@@ -1,5 +1,5 @@
 Name:           x509-scitokens-issuer
-Version:        0.4.0
+Version:        0.4.1
 Release:        1%{?dist}
 Summary:        SciTokens issuer based on X509 authentication.
 
@@ -15,6 +15,7 @@ Source0:        %{name}-%{version}.tar.gz
 BuildRequires:  cmake
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
+BuildRequires:  boost-devel
 
 Requires:       python2-scitokens
 Requires:       python-requests
@@ -98,6 +99,9 @@ fi
 %{_libdir}/libX509SciTokensIssuer.so
 
 %changelog
+* Wed Mar 21 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.4.1-1
+- Add initial support for RHEL6.
+
 * Tue Feb 06 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.4.0-1
 - Add new generic issuer CLI.
 
