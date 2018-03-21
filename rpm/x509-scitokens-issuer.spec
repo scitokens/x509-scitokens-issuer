@@ -9,8 +9,11 @@ URL:            https://scitokens.org
 # Generated from:
 # git archive v%{version} --prefix=%{name}-%{version}/ | gzip -7 > ~/rpmbuild/SOURCES/x509-scitokens-issuer-%{version}.tar.gz
 Source0:        %{name}-%{version}.tar.gz
- 
+
+%if 0%{?rhel} >= 7
 %{?systemd_requires}
+BuildRequires:  systemd
+%endif
 
 BuildRequires:  cmake
 BuildRequires:  python2-devel
@@ -89,8 +92,12 @@ fi
 %{python2_sitelib}/x509_scitokens_issuer*
 %attr(0700, apache, apache) %dir %{_localstatedir}/cache/httpd/%{name}
 %ghost %attr(-, apache, apache) %{_localstatedir}/cache/httpd/%{name}/dn_mapping.json
+
+%if 0%{?rhel} >= 7
 %{_unitdir}/cms-mapping-updater.service
 %{_unitdir}/cms-mapping-updater.timer
+%endif
+
 %{_datarootdir}/%{name}/x509_scitokens_issuer.cfg
 %{_localstatedir}/www/wsgi-scripts/%{name}.wsgi
 
