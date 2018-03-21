@@ -48,6 +48,11 @@ make install DESTDIR=%{buildroot}
 %{py2_install}
 rm %{buildroot}%{_bindir}/cms-scitokens-init
 
+%if 0%{?rhel} < 7
+rm -f %{_unitdir}/cms-mapping-updater.service
+rm -f %{_unitdir}/cms-mapping-updater.timer
+%endif
+
 %post
 %systemd_post httpd.service
 
