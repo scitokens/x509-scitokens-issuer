@@ -97,6 +97,8 @@ fi
 %files client
 %{python2_sitearch}/x509_scitokens_issuer_client.py*
 %{_libdir}/libX509SciTokensIssuer.so
+%{_bindir}/x509-scitoken-init
+%{_bindir}/macaroon-init
 
 %changelog
 * Wed Mar 21 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.4.1-1
