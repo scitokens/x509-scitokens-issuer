@@ -1,0 +1,32 @@
+diff --git a/src/x509_scitokens_issuer_client.py b/src/x509_scitokens_issuer_client.py
+index 6a56811..223b2ec 100755
+--- a/src/x509_scitokens_issuer_client.py
++++ b/src/x509_scitokens_issuer_client.py
+@@ -9,9 +9,12 @@ import os
+ import sys
+ import json
+ import urlparse
++import tempfile
+ 
+ import requests
+ 
++g_TEMP = None
++
+ class TokenException(Exception):
+     """
+     Base class for token-fetching-related exceptions
+@@ -49,6 +52,14 @@ def __configure_authenticated_session(cert=None, key=None):
+ 
+     if not cert:
+         cert = os.environ.get('X509_USER_PROXY', default_cert)
++        global g_TEMP
++        g_TEMP = tempfile.NamedTemporaryFile()
++        with open(cert, 'r') as fp:
++            g_TEMP.write(fp.read())
++        with open('/etc/pki/tls/certs/ca-bundle.crt', 'r') as fp:
++            g_TEMP.write(fp.read())
++        g_TEMP.flush()
++        session.verify = g_TEMP.name
+     if not key:
+         key = os.environ.get('X509_USER_PROXY', default_key)
+ 

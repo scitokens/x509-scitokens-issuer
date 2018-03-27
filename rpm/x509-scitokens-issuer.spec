@@ -1,5 +1,5 @@
 Name:           x509-scitokens-issuer
-Version:        0.4.1
+Version:        0.4.2
 Release:        1%{?dist}
 Summary:        SciTokens issuer based on X509 authentication.
 
@@ -42,6 +42,9 @@ A client library for the x509-scitokens-issuer.
 
 %prep
 %setup
+%if 0%{?rhel} < 7
+patch -p1 < rpm/redo-cert-bundle.patch
+%endif
 
 %build
 %{py2_build}
@@ -117,6 +120,9 @@ fi
 %{_bindir}/macaroon-init
 
 %changelog
+* Tue Mar 27 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.4.2-1
+- Patch CA bundle issue on RHEL6.
+
 * Wed Mar 21 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.4.1-1
 - Add initial support for RHEL6.
 
