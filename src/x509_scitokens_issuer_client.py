@@ -7,7 +7,10 @@ corresponding access token.
 
 import os
 import sys
+import glob
 import json
+import atexit
+import tempfile
 import urlparse
 
 import requests
@@ -32,6 +35,43 @@ class TokenArgumentException(TokenException):
     Class for errors related to the parameters passed to the token
     creation functions
     """
+
+
+g_cafile = None
+def __clean_cafile():
+    print "At exit"
+    if g_cafile:
+        g_cafile.close()
+atexit.register(__clean_cafile)
+def prepare_verify_path():
+    """
+    Prior to requests 2.9.0, directory-style CA setups were not supported;
+    detect this issue and do a workaround by concatenating all the CAs
+    into a temporary file.
+    """
+    global g_cafile
+    if g_cafile:
+        return g_cafile.name
+
+    if not os.path.exists("/etc/grid-security/certificates"):
+        return None
+
+    rver = requests.__version__.split(".")
+    rver = (int(rver[0]), int(rver[1]))
+    if (rver[0] > 2) or (rver[0] == 2 and rver[1] >= 9):
+        return "/etc/grid-security/certificates"
+
+    # Here's the workaround - create our own CA bundle for this python process.
+    g_cafile = tempfile.NamedTemporaryFile(prefix="ca-bundle-", suffix=".crt", delete=True)
+    for fname in glob.glob("/etc/grid-security/certificates/*.0"):
+        with open(fname, "r") as fp:
+            g_cafile.write("\n")
+            g_cafile.write(fp.read())
+            g_cafile.write("\n")
+    g_cafile.flush()
+    print g_cafile.name
+    return g_cafile.name
+
 
 def __configure_authenticated_session(cert=None, key=None):
     """
@@ -58,6 +98,10 @@ def __configure_authenticated_session(cert=None, key=None):
         session.cert = cert
     if os.path.exists(key):
         session.cert = (cert, key)
+
+    ca_path = prepare_verify_path()
+    if ca_path:
+        session.verify = ca_path
 
     return session
 
