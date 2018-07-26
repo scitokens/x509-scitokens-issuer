@@ -103,7 +103,7 @@ x509_macaroon_issuer_retrieve(const char *url, const char *provided_cert, const 
             contents << ",";
         }
         contents << activities[idx];
-        if (!strcasecmp(activities[idx], "upload"))
+        if (!strcasecmp(activities[idx], "upload") || strstr(activities[idx], "UPLOAD"))
         {
             has_upload = true;
         }
