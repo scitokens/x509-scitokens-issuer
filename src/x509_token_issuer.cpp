@@ -91,6 +91,7 @@ x509_macaroon_issuer_retrieve(const char *url, const char *provided_cert, const 
     std::stringstream contents;
     contents << "{\"caveats\": [\"activity:";
     bool first_activity = true;
+    bool has_upload = false;
     for (int idx=0; activities[idx]; idx++)
     {
         if (first_activity)
@@ -102,6 +103,15 @@ x509_macaroon_issuer_retrieve(const char *url, const char *provided_cert, const 
             contents << ",";
         }
         contents << activities[idx];
+        if (!strcasecmp(activities[idx], "upload"))
+        {
+            has_upload = true;
+        }
+    }
+    // WORKAROUND: Due to a mis-mapping in dCache, we need both the UPLOAD and MANAGE permission to upload successfully.
+    if (has_upload)
+    {
+        contents << ",MANAGE";
     }
     contents << "\"], \"validity\": \"PT" << validity << "M\"}";
 
