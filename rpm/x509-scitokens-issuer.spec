@@ -1,5 +1,5 @@
 Name:           x509-scitokens-issuer
-Version:        0.4.2
+Version:        0.5.0
 Release:        1%{?dist}
 Summary:        SciTokens issuer based on X509 authentication.
 
@@ -22,7 +22,8 @@ Requires: python-ndg_httpsclient
 BuildRequires:  cmake
 BuildRequires:  python2-devel
 BuildRequires:  python2-setuptools
-BuildRequires:  boost-devel
+BuildRequires:  davix-devel
+BuildRequires:  json-c-devel
 
 Requires:       python2-scitokens
 Requires:       python-requests
@@ -42,9 +43,6 @@ A client library for the x509-scitokens-issuer.
 
 %prep
 %setup
-%if 0%{?rhel} < 7
-patch -p1 < rpm/redo-cert-bundle.patch
-%endif
 
 %build
 %{py2_build}
@@ -114,12 +112,14 @@ fi
 %{_localstatedir}/www/wsgi-scripts/%{name}.wsgi
 
 %files client
-%{python2_sitearch}/x509_scitokens_issuer_client.py*
 %{_libdir}/libX509SciTokensIssuer.so
 %{_bindir}/x509-scitoken-init
 %{_bindir}/macaroon-init
 
 %changelog
+* Thu Jul 26 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.0-1
+- Switch client library to pure C/C++.
+
 * Tue Mar 27 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.4.2-1
 - Patch CA bundle issue on RHEL6.
 

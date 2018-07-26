@@ -9,6 +9,14 @@
 using namespace Davix;
 
 
+// When this library included an embedded python interpretter, this
+// function was not a NO-OP.  We keep it around for now, just in case.
+extern"C" int
+x509_scitokens_issuer_init(char **err)
+{
+    return 0;
+}
+
 static std::string
 token_issuer_version()
 {
