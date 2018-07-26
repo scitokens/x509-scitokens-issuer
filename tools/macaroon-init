@@ -54,6 +54,7 @@ def configure_authenticated_session():
         session.cert = cert
     if os.path.exists(key):
         session.cert = (cert, key)
+    #session.verify = '/etc/grid-security/certificates'
 
     return session
 

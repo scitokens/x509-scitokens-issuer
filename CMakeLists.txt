@@ -15,16 +15,20 @@ find_package( Boost REQUIRED COMPONENTS python )
 find_package( PythonLibs REQUIRED )
 find_package( PythonInterp REQUIRED )
 
+include (FindPkgConfig)
+pkg_check_modules(DAVIX REQUIRED davix)
+pkg_check_modules(JSON REQUIRED json-c)
+
 if( CMAKE_COMPILER_IS_GNUCXX )
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=gnu++0x")
 endif()
 SET( CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
 SET( CMAKE_MODULE_LINKER_FLAGS "-Wl,--no-undefined")
 
-include_directories(${PYTHON_INCLUDE_DIRS} ${BOOST_INCLUDE_DIRS})
+include_directories(${PYTHON_INCLUDE_DIRS} ${BOOST_INCLUDE_DIRS} ${DAVIX_INCLUDE_DIRS} ${JSON_INCLUDE_DIRS})
 
-add_library(X509SciTokensIssuer SHARED src/x509_scitokens_issuer.cpp)
-target_link_libraries(X509SciTokensIssuer -ldl ${Boost_PYTHON_LIBRARY} ${PYTHON_LIBRARIES})
+add_library(X509SciTokensIssuer SHARED src/x509_token_issuer.cpp)
+target_link_libraries(X509SciTokensIssuer -ldl ${Boost_PYTHON_LIBRARY} ${PYTHON_LIBRARIES} ${DAVIX_LIBRARIES} ${JSON_LIBRARIES})
 set_target_properties(X509SciTokensIssuer PROPERTIES LINK_FLAGS "-Wl,--version-script=${CMAKE_SOURCE_DIR}/configs/export-lib-symbols")
 
 add_executable(cms-scitokens-init tools/cms-scitoken-init.cpp)
@@ -42,7 +46,3 @@ install(
 install(
   TARGETS cms-scitokens-init macaroon-init
   DESTINATION bin)
-
-install(
-  FILES ${CMAKE_SOURCE_DIR}/src/x509_scitokens_issuer_client.py
-  DESTINATION ${LIB_INSTALL_DIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/ )
