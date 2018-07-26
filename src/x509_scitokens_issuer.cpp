@@ -84,7 +84,7 @@ x509_scitokens_issuer_init(char **err)
 
 
 extern "C" char *
-x509_scitokens_issuer_retrieve(const char *issuer, const char *cert, const char *key,
+x509_scitokens_issuer_retrieve_orig(const char *issuer, const char *cert, const char *key,
                                char **err)
 {
     *err = NULL;
@@ -123,7 +123,7 @@ x509_scitokens_issuer_retrieve(const char *issuer, const char *cert, const char 
 }
 
 extern "C" char *
-x509_macaroon_issuer_retrieve(const char *url, const char *cert, const char *key,
+x509_macaroon_issuer_retrieve_orig(const char *url, const char *cert, const char *key,
                               int validity, const char **activities, char **err)
 {
     *err = NULL;
