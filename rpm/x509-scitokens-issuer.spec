@@ -1,5 +1,5 @@
 Name:           x509-scitokens-issuer
-Version:        0.5.0
+Version:        0.5.1
 Release:        1%{?dist}
 Summary:        SciTokens issuer based on X509 authentication.
 
@@ -117,6 +117,9 @@ fi
 %{_bindir}/macaroon-init
 
 %changelog
+* Thu Jul 26 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.1-1
+- Workaround permission mapping in dCache.
+
 * Thu Jul 26 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.0-1
 - Switch client library to pure C/C++.
 
