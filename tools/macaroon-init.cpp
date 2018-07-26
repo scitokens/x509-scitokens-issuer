@@ -81,6 +81,7 @@ int main(int argc, char *argv[])
     if (token)
     {
         printf("%s\n", token);
+        free(token);
     }
     else
     {
