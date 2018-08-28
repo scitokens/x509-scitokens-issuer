@@ -56,8 +56,8 @@ make install DESTDIR=%{buildroot}
 rm %{buildroot}%{_bindir}/cms-scitokens-init
 
 %if 0%{?rhel} < 7
-rm -f %{buildroot}/usr/lib/systemd/system/cms-mapping-updater.service
-rm -f %{buildroot}/usr/lib/systemd/system/cms-mapping-updater.timer
+rm -f %{buildroot}/usr/local/lib/systemd/system/cms-mapping-updater.service
+rm -f %{buildroot}/usr/local/lib/systemd/system/cms-mapping-updater.timer
 %endif
 
 %post
