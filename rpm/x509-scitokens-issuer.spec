@@ -1,5 +1,5 @@
 Name:           x509-scitokens-issuer
-Version:        0.5.2
+Version:        0.5.3
 Release:        1%{?dist}
 Summary:        SciTokens issuer based on X509 authentication.
 
@@ -27,8 +27,10 @@ BuildRequires:  json-c-devel
 
 Requires:       python2-scitokens
 Requires:       python-requests
+Requires:       python-flask
 Requires:       httpd
 Requires:       gridsite
+Requires:       mod_wsgi
 
 %description
 %{summary}
@@ -117,6 +119,10 @@ fi
 %{_bindir}/macaroon-init
 
 %changelog
+* Tue Sep 4 2018 Edgar Fajardo <emfajard@ucsd.edu> - 0.5.3-1
+- Adding the correct requirements
+- Bug fixes
+
 * Thu Jul 26 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.2-1
 - Apply workaround whenever UPLOAD is found.
 
