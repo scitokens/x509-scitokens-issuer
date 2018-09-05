@@ -27,7 +27,7 @@ BuildRequires:  json-c-devel
 
 Requires:       python2-scitokens
 Requires:       python-requests
-Requires:     	python-flask
+Requires:       python-flask
 Requires:       httpd
 Requires:       gridsite
 Requires:       mod_wsgi
