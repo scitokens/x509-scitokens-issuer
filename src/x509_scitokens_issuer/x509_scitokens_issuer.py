@@ -8,6 +8,7 @@ import urllib
 import urlparse
 import threading
 import traceback
+import platform
 
 import scitokens
 import utils as x509_utils
@@ -15,7 +16,10 @@ import utils as x509_utils
 from flask import Flask, request
 
 # Load the application and configuration defaults.
-app = Flask(__name__, instance_path="/usr/local/share/x509-scitokens-issuer", instance_relative_config=True)
+if platform.system() == 'Darwin':
+    app = Flask(__name__, instance_path="/usr/local/share/x509-scitokens-issuer", instance_relative_config=True)
+else:
+    app = Flask(__name__, instance_path="/usr/share/x509-scitokens-issuer", instance_relative_config=True)
 app.updater_thread = None
 app.issuer_key = None
 
