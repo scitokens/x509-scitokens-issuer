@@ -6,6 +6,10 @@ Summary:        SciTokens issuer based on X509 authentication.
 License:        Apache 2.0
 URL:            https://scitokens.org
 
+# define platform checkers
+%define islinux %(case %{cmsos} in (slc*|fc*) echo 1 ;; (*) echo 0 ;; esac)
+%define isdarwin %(case %{cmsos} in (osx*) echo 1 ;; (*) echo 0 ;; esac)
+
 # Generated from:
 # git archive v%{version} --prefix=%{name}-%{version}/ | gzip -7 > ~/rpmbuild/SOURCES/x509-scitokens-issuer-%{version}.tar.gz
 Source0:        %{name}-%{version}.tar.gz
@@ -53,9 +57,18 @@ make install DESTDIR=%{buildroot}
 %{py2_install}
 rm %{buildroot}%{_bindir}/cms-scitokens-init
 
-%if 0%{?rhel} < 7
+%if %isdarwin
+# we should use /usr/local to avoid SIP problem on OSX
 rm -f %{buildroot}/usr/local/lib/systemd/system/cms-mapping-updater.service
 rm -f %{buildroot}/usr/local/lib/systemd/system/cms-mapping-updater.timer
+
+%else
+
+%if 0%{?rhel} < 7
+rm -f %{buildroot}/usr/lib/systemd/system/cms-mapping-updater.service
+rm -f %{buildroot}/usr/lib/systemd/system/cms-mapping-updater.timer
+%endif
+
 %endif
 
 %post
