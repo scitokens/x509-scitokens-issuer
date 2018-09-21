@@ -6,8 +6,7 @@ Summary:        SciTokens issuer based on X509 authentication.
 License:        Apache 2.0
 URL:            https://scitokens.org
 
-# define platform checkers
-%define islinux %(case %{cmsos} in (slc*|fc*) echo 1 ;; (*) echo 0 ;; esac)
+# Detect builds on Darwin in the CMS environment.
 %define isdarwin %(case %{cmsos} in (osx*) echo 1 ;; (*) echo 0 ;; esac)
 
 # Generated from:
