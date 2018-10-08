@@ -118,22 +118,42 @@ x509_macaroon_issuer_retrieve(const char *url, const char *provided_cert, const 
     req.addHeaderField("Content-Type", "application/macaroon-request");
     req.setRequestBody(contents.str());
 
-    if (req.executeRequest(&req_err))
+    if (req.beginRequest(&req_err))
     {
         std::stringstream ss;
         ss << "Macaroon request failed: " << req_err->getErrMsg();
         *err = strdup(ss.str().c_str());
         return NULL;
     }
-
-    const char *response_data = req.getAnswerContent();
-    if (!response_data)
+    static const dav_ssize_t max_size = 1024*1024;
+    dav_ssize_t answer_size = req.getAnswerSize();
+    if (answer_size >= max_size)
     {
-        *err = strdup("Received response with empty content");
+        std::stringstream ss;
+        ss << "Macaroon response is too large to process: " << answer_size << " bytes";
+        *err = strdup(ss.str().c_str());
         return NULL;
     }
 
-    json_object *macaroon_obj = json_tokener_parse(response_data);
+    std::vector<char> resultBuffer; resultBuffer.resize(max_size);
+    // StoRM has an interesting bug where an unknown/unhandled POST is treated like a corresponding GET,
+    // meaning it would respond to the macaroon request with the entire file itself.  To protect
+    // against this, we read out at most 1MB.
+    dav_ssize_t segment_result = req.readSegment(&resultBuffer[0], max_size, &req_err);
+    if (segment_result < 0)
+    {
+        std::stringstream ss;
+        ss << "Reading body of macaroon request failed: " << req_err->getErrMsg();
+        *err = strdup(ss.str().c_str());
+        return NULL;
+    }
+    if (segment_result >= max_size)
+    {
+        *err = strdup("Macaroon response was over 1MB");
+        return NULL;
+    }
+
+    json_object *macaroon_obj = json_tokener_parse(&resultBuffer[0]);
     if (!macaroon_obj)
     {
         *err = strdup("Response was not valid JSON.");
