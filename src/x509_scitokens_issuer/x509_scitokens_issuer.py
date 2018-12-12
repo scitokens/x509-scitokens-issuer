@@ -9,6 +9,7 @@ import urlparse
 import threading
 import traceback
 import platform
+import requests
 
 import scitokens
 import utils as x509_utils
