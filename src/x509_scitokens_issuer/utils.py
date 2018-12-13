@@ -79,7 +79,7 @@ def load_jwks(jwks_obj):
         public_key_numbers = ec.EllipticCurvePublicNumbers(
             long_from_bytes(jwks_obj['x']),
             long_from_bytes(jwks_obj['y']),
-            ec.SECP256R1
+            ec.SECP256R1()
         )
         private_key_numbers = ec.EllipticCurvePrivateNumbers(
             long_from_bytes(jwks_obj['d']),
