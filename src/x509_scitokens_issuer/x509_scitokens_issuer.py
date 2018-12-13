@@ -19,22 +19,31 @@ import cryptography.hazmat.primitives.asymmetric.ec as ec
 from flask import Flask, request
 
 # Load the application and configuration defaults.
+ipath = '/usr/share/x509-scitokens-issuer'
 if platform.system() == 'Darwin':
-    app = Flask(__name__, instance_path="/usr/local/share/x509-scitokens-issuer", instance_relative_config=True)
-else:
-    app = Flask(__name__, instance_path="/usr/share/x509-scitokens-issuer", instance_relative_config=True)
+    ipath = '/usr/local/share/x509-scitokens-issuer'
+instance_path = os.environ.get('X509_SCITOKENS_ISSUER_INSTANCE_PATH', ipath)
+app = Flask(__name__, instance_path=instance_path, instance_relative_config=True)
 app.updater_thread = None
 app.issuer_key = None
 
 def _load_default_config():
-    app.config.update({
+    aconf = os.environ.get('X509_SCITOKENS_ISSUER_CONFIG', '')
+    if aconf:
+        print("Loading {} config".format(aconf))
+        conf = json.load(open(aconf))
+    else:
+        print("Loading default config")
+        conf = {
         "CONFIG_FILE_GLOB": "/etc/x509-scitokens-issuer/conf.d/*.cfg",
         "LIFETIME": 3600,
         "ISSUER_KEY": "/etc/x509-scitokens-issuer/issuer_key.jwks",
         "RULES": "/etc/x509-scitokens-issuer/rules.json",
         "DN_MAPPING": "/var/cache/httpd/x509-scitokens-issuer/dn_mapping.json",
         "ENABLED": False
-    })
+        }
+
+    app.config.update(conf)
     app.config.from_pyfile("x509_scitokens_issuer.cfg")
     if os.environ.get('X509_SCITOKENS_ISSUER'):
         app.config.from_envvar("X509_SCITOKENS_ISSUER")
