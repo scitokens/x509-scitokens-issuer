@@ -14,6 +14,8 @@ import requests
 import scitokens
 import utils as x509_utils
 
+import cryptography.hazmat.primitives.asymmetric.ec as ec
+
 from flask import Flask, request
 
 # Load the application and configuration defaults.
@@ -301,8 +303,17 @@ def token_issuer():
         if requested_scopes != updated_scopes:
             return_updated_scopes = True
 
-    token = scitokens.SciToken(key=app.issuer_key, key_id=app.issuer_kid)
-    token['scp'] = list(scopes)
+    # Return a 405
+    if not scopes:
+        return return_oauth_error_response("No applicable scopes for this user.")
+
+    if isinstance(app.issuer_key, ec.EllipticCurvePrivateKey):
+        algorithm = "ES256"
+    else:
+        algorithm = "RS256"
+
+    token = scitokens.SciToken(key=app.issuer_key, key_id=app.issuer_kid, algorithm=algorithm)
+    token['scope'] = ' '.join(scopes)
     if user:
         token['sub'] = user
     else:
