@@ -1,4 +1,4 @@
-
+from __future__ import print_function
 import os
 import re
 import glob
@@ -51,11 +51,11 @@ def _load_default_config():
     files = glob.glob(config_glob)
     files.sort()
     for fname in files:
-        print "Loading configuration file %s" % fname
+        print("Loading configuration file %s" % fname)
         app.config.from_pyfile(fname)
 
 _load_default_config()
-print "Loading X509 SciTokens issuer with the following config: %s" % str(app.config)
+print("Loading X509 SciTokens issuer with the following config: %s" % str(app.config))
 
 class InvalidFQAN(Exception):
     pass
@@ -161,8 +161,8 @@ def update_app():
 
     app.users_mapping = users_mapping
     app.rules = rule_list
-    print "Users mapping has %d rules" % len(app.users_mapping)
-    print "App rules:", app.rules
+    print("Users mapping has %d rules" % len(app.users_mapping))
+    print("App rules:", app.rules)
 
     with open(app.config['ISSUER_KEY'], 'r') as fd:
         json_obj = json.load(fd)
@@ -181,7 +181,7 @@ def launch_updater_thread():
         try:
             update_app()
         except Exception, e:
-            print "Failure occurred when trying to update the app config:", str(e)
+            print("Failure occurred when trying to update the app config:", str(e))
             traceback.print_exc()
         if repeat:
             time.sleep(60)
