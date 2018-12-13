@@ -28,21 +28,18 @@ app.updater_thread = None
 app.issuer_key = None
 
 def _load_default_config():
+    conf = {
+    "CONFIG_FILE_GLOB": "/etc/x509-scitokens-issuer/conf.d/*.cfg",
+    "LIFETIME": 3600,
+    "ISSUER_KEY": "/etc/x509-scitokens-issuer/issuer_key.jwks",
+    "RULES": "/etc/x509-scitokens-issuer/rules.json",
+    "DN_MAPPING": "/var/cache/httpd/x509-scitokens-issuer/dn_mapping.json",
+    "ENABLED": False
+    }
     aconf = os.environ.get('X509_SCITOKENS_ISSUER_CONFIG', '')
     if aconf:
         print("Loading {} config".format(aconf))
-        conf = json.load(open(aconf))
-    else:
-        print("Loading default config")
-        conf = {
-        "CONFIG_FILE_GLOB": "/etc/x509-scitokens-issuer/conf.d/*.cfg",
-        "LIFETIME": 3600,
-        "ISSUER_KEY": "/etc/x509-scitokens-issuer/issuer_key.jwks",
-        "RULES": "/etc/x509-scitokens-issuer/rules.json",
-        "DN_MAPPING": "/var/cache/httpd/x509-scitokens-issuer/dn_mapping.json",
-        "ENABLED": False
-        }
-
+        conf.update(json.load(open(aconf)))
     app.config.update(conf)
     app.config.from_pyfile("x509_scitokens_issuer.cfg")
     if os.environ.get('X509_SCITOKENS_ISSUER'):
