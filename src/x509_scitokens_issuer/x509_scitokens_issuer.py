@@ -246,12 +246,20 @@ def return_oauth_error_response(error):
     resp.headers['Pragma'] = 'no-cache'
     return resp
 
+
+def return_internal_error_response(error):
+    resp = app.response_class(response=json.dumps({"error": str(error)}), mimetype='application/json', status=requests.codes.internal_server_error)
+    resp.headers['Cache-Control'] = 'no-store'
+    resp.headers['Pragma'] = 'no-cache'
+    return resp
+
+
 @app.route("/token", methods=["POST"])
 def token_issuer():
 
     # Currently, we only support the client_credentials grant type.
     if request.form.get("grant_type") != "client_credentials":
-        return return_oauth_error_response("Incorrect grant_type; 'client_credentials' must be used.")
+        return return_oauth_error_response("Incorrect grant_type %s; 'client_credentials' must be used." % request.form.get("grant_type"))
     requested_scopes = set([i for i in request.form.get("scopes", "").split() if i])
 
     creds = {}
@@ -304,7 +312,11 @@ def token_issuer():
     else:
         split = urlparse.SplitResult(scheme="https", netloc=request.environ['HTTP_HOST'], path=request.environ['REQUEST_URI'], query="", fragment="")
         issuer = urlparse.urlunsplit(split)
-    serialized_token = token.serialize(issuer = issuer, lifetime = app.config['LIFETIME'])
+
+    try:
+        serialized_token = token.serialize(issuer = issuer, lifetime = app.config['LIFETIME'])
+    except Exception as ex:
+        return return_internal_error_response("Failure when serializing token: {}".format(ex))
 
     json_response = {"access_token": serialized_token,
                      "token_type": "bearer",
