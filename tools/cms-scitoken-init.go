@@ -2,8 +2,11 @@ package main
 
 // cms-scitoken-init - Go client for CMS scitoken
 // Author: Valentin Kuznetsov <vkuznet@gmail.com>
-// Build instruction: go build cms-scitoken-init.go
-// Run instructions: cms-scitoken-init -url <issuer URL> # use -verbose to debug HTTP request/responses
+// Build instruction:
+//    go get github.com/vkuznet/x509proxy # get x509proxy package
+//    go build cms-scitoken-init.go       # builds cms-scitoken-init executable
+// Run instructions:
+//    cms-scitoken-init -url <issuer URL> # use -verbose to debug HTTP request/responses
 
 import (
 	"bytes"
