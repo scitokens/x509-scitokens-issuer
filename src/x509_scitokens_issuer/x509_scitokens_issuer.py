@@ -273,6 +273,8 @@ def token_issuer():
     creds = {}
     dn_cred = None
     for key, val in request.environ.items():
+        if app.config.get('VERBOSE', False):
+            print("### request {} {}".format(key, val))
         if key.startswith("GRST_CRED_AURI_"):
             entry_num = int(key[15:]) # 15 = len("GRST_CRED_AURI_")
             creds[entry_num] = val
@@ -288,10 +290,12 @@ def token_issuer():
         return return_oauth_error_response("No client certificate or proxy used for TLS authentication.")
     dn_cred = urllib.unquote_plus(dn_cred)
 
-    #print entries
     scopes, user = generate_scopes_and_user(entries)
-    #print scopes
-    #print user
+    if app.config.get('VERBOSE', False):
+        print("### creds  : {}".format(creds))
+        print("### entries: {}".format(entries))
+        print("### scopes : {}".format(scopes))
+        print("### user   : {}".format(user))
 
     # Compare the generated scopes against the requested scopes (if given)
     # If we don't give the user everything they want, then we 
