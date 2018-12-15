@@ -57,11 +57,19 @@ func tlsCerts(verbose bool) ([]tls.Certificate, error) {
 	if uproxy == "" && uckey == "" { // user doesn't have neither proxy or user certs
 		return nil, nil
 	}
+	if verbose {
+		fmt.Println("X509_USER_PROXY", uproxy)
+		fmt.Println("X509_USER_KEY", uckey)
+		fmt.Println("X509_USER_CERT", ucert)
+	}
 	if uproxy != "" {
 		// use local implementation of LoadX409KeyPair instead of tls one
 		x509cert, err := x509proxy.LoadX509Proxy(uproxy)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse X509 proxy: %v", err)
+		}
+		if verbose {
+			fmt.Println("Load x509cert via proxy cert")
 		}
 		certs := []tls.Certificate{x509cert}
 		return certs, nil
@@ -69,6 +77,9 @@ func tlsCerts(verbose bool) ([]tls.Certificate, error) {
 	x509cert, err := tls.LoadX509KeyPair(ucert, uckey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse user X509 certificate: %v", err)
+	}
+	if verbose {
+		fmt.Println("Load x509cert via user key/cert")
 	}
 	certs := []tls.Certificate{x509cert}
 	return certs, nil
