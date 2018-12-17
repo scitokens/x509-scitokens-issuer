@@ -277,14 +277,14 @@ def token_issuer():
     creds = {}
     dn_cred = None
     entry_num = 0
+    pattern = "GRST_CRED_AURI_"
+    if app.config.get("CMS", False):
+        pattern = "HTTP_CMS_AUTH"
     for key, val in request.environ.items():
         if app.config.get('VERBOSE', False):
             print("### request {} {}".format(key, val))
         if key.startswith("GRST_CRED_AURI_"):
             entry_num = int(key[15:]) # 15 = len("GRST_CRED_AURI_")
-        pattern = "GRST_CRED_AURI_"
-        if app.config.get("CMS", False):
-            pattern = "HTTP_CMS_AUTH"
         if key.startswith(pattern):
             if pattern == "HTTP_CMS_AUTH":
                 if key.endswith("_DN"):
