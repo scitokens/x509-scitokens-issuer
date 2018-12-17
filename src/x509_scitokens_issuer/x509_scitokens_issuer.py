@@ -34,6 +34,7 @@ def _load_default_config():
     "ISSUER_KEY": "/etc/x509-scitokens-issuer/issuer_key.jwks",
     "RULES": "/etc/x509-scitokens-issuer/rules.json",
     "DN_MAPPING": "/var/cache/httpd/x509-scitokens-issuer/dn_mapping.json",
+    "CMS": False,
     "ENABLED": False
     }
     aconf = os.environ.get('X509_SCITOKENS_ISSUER_CONFIG', '')
@@ -192,6 +193,9 @@ launch_updater_thread()
 
 def generate_formats(cred):
     info = {}
+    if cred.startswith('username:'):
+        info['username'] = urllib.unquote_plus(cred[9:])
+        return info
     if cred.startswith("dn:"):
         dn = urllib.unquote_plus(cred[3:])
         username = app.users_mapping.get(urllib.unquote_plus(cred[3:]))
@@ -272,12 +276,27 @@ def token_issuer():
 
     creds = {}
     dn_cred = None
+    entry_num = 0
+    pattern = "GRST_CRED_AURI_"
+    if app.config.get("CMS", False):
+        pattern = "HTTP_CMS_AUTH"
     for key, val in request.environ.items():
         if app.config.get('VERBOSE', False):
             print("### request {} {}".format(key, val))
         if key.startswith("GRST_CRED_AURI_"):
             entry_num = int(key[15:]) # 15 = len("GRST_CRED_AURI_")
+        if key.startswith(pattern):
+            if pattern == "HTTP_CMS_AUTH":
+                if key.endswith("_DN"):
+                    val = "dn:"+val
+                eif key.endswith("_LOGIN"):
+                    val = "username:"+val
+                elif key.startswith("HTTP_CMS_AUTHZ"):
+                    val = "fqan:/{}".format(val.split(':')[-1])
+                else:
+                    continue
             creds[entry_num] = val
+            entry_num += 1
     keys = creds.keys()
     keys.sort()
     entries = []
