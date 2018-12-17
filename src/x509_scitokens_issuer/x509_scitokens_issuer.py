@@ -283,8 +283,6 @@ def token_issuer():
     for key, val in request.environ.items():
         if app.config.get('VERBOSE', False):
             print("### request {} {}".format(key, val))
-        if key.startswith("GRST_CRED_AURI_"):
-            entry_num = int(key[15:]) # 15 = len("GRST_CRED_AURI_")
         if key.startswith(pattern):
             if pattern == "HTTP_CMS_AUTH":
                 if key.endswith("_DN"):
@@ -295,8 +293,10 @@ def token_issuer():
                     val = "fqan:/{}".format(val.split(':')[-1])
                 else:
                     continue
-            creds[entry_num] = val
-            entry_num += 1
+                creds[entry_num] = val
+                entry_num += 1
+            else:
+                entry_num = int(key[15:]) # 15 = len("GRST_CRED_AURI_")
     keys = creds.keys()
     keys.sort()
     entries = []
