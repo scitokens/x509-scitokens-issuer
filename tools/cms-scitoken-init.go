@@ -99,8 +99,7 @@ func HttpClient(verbose bool) *http.Client {
 	return &http.Client{Transport: tr}
 }
 
-// run go-routine to periodically obtain rucio token
-// FetchToken request new Rucio token
+// FetchToken requests new SciToken
 func FetchToken(rurl string, verbose bool) string {
 	rurl = fmt.Sprintf("%s/.well-known/openid-configuration", rurl)
 	fmt.Println("Querying", rurl)
