@@ -289,7 +289,7 @@ def token_issuer():
             if pattern == "HTTP_CMS_AUTH":
                 if key.endswith("_DN"):
                     val = "dn:"+val
-                eif key.endswith("_LOGIN"):
+                elif key.endswith("_LOGIN"):
                     val = "username:"+val
                 elif key.startswith("HTTP_CMS_AUTHZ"):
                     val = "fqan:/{}".format(val.split(':')[-1])
