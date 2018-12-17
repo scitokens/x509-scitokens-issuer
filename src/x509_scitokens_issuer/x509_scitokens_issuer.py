@@ -292,7 +292,7 @@ def token_issuer():
                 eif key.endswith("_LOGIN"):
                     val = "username:"+val
                 elif key.startswith("HTTP_CMS_AUTHZ"):
-                    val = "fqan:"+val
+                    val = "fqan:/Role={}".format(val.split(':')[-1])
             creds[entry_num] = val
             entry_num += 1
     keys = creds.keys()
