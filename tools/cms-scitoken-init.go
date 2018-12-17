@@ -169,5 +169,5 @@ func FetchToken(rurl string, verbose bool) string {
 		fmt.Println("ERROR: unable to read response", err)
 		return ""
 	}
-	return fmt.Sprintf(string(data))
+	return string(data)
 }
