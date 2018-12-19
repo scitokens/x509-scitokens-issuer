@@ -35,8 +35,21 @@ def _load_default_config():
     "RULES": "/etc/x509-scitokens-issuer/rules.json",
     "DN_MAPPING": "/var/cache/httpd/x509-scitokens-issuer/dn_mapping.json",
     "CMS": False,
+    "VERBOSE": False,
     "ENABLED": False
     }
+    if os.path.exists('/data/srv/state/frontend/x509_scitokens_issuer'):
+        conf = {
+        "CONFIG_FILE_GLOB": "/data/srv/state/frontend/x509_scitokens_issuer/*.cfg",
+        "LIFETIME": 3600,
+        "ISSUER_KEY": "/data/srv/state/frontend/x509_scitokens_issuer/issuer_key.jwks",
+        "RULES": "/data/srv/state/frontend/x509_scitokens_issuer/rules.json",
+        "DN_MAPPING": "/data/srv/state/frontend/x509_scitokens_issuer/dn_mapping.json",
+        "CMS": True,
+        "VERBOSE": False,
+        "ENABLED": True
+        }
+
     aconf = os.environ.get('X509_SCITOKENS_ISSUER_CONFIG', '')
     if aconf:
         print("Loading {} config".format(aconf))
