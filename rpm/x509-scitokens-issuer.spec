@@ -1,5 +1,5 @@
 Name:           x509-scitokens-issuer
-Version:        0.5.4
+Version:        0.7.0
 Release:        1%{?dist}
 Summary:        SciTokens issuer based on X509 authentication.
 
@@ -131,6 +131,9 @@ fi
 %{_bindir}/macaroon-init
 
 %changelog
+* Wed Dec 19 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.7.0-1
+- Implement new OAuth 2.0-based request for 'macaroons' (or similar).
+
 * Mon Oct 08 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.5.4-1
 - Do not attempt to read Macaroon responses larger than 1MB.
 
