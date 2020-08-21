@@ -9,7 +9,6 @@ URL:            https://scitokens.org
 # Detect builds on Darwin in the CMS environment.
 %define isdarwin %(case %{cmsos} in (osx*) echo 1 ;; (*) echo 0 ;; esac)
 
-
 # Generated from:
 # git archive v%{version} --prefix=%{name}-%{version}/ | gzip -7 > ~/rpmbuild/SOURCES/x509-scitokens-issuer-%{version}.tar.gz
 Source0:        %{name}-%{version}.tar.gz
