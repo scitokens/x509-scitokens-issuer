@@ -1,5 +1,5 @@
 Name:           x509-scitokens-issuer
-Version:        0.7.0
+Version:        0.8.0
 Release:        1%{?dist}
 Summary:        SciTokens issuer based on X509 authentication.
 
@@ -23,17 +23,31 @@ Requires: python-ndg_httpsclient
 %endif
 
 BuildRequires:  cmake
-BuildRequires:  python2-devel
-BuildRequires:  python2-setuptools
 BuildRequires:  davix-devel
 BuildRequires:  json-c-devel
 
+%if 0%{?rhel} >= 8
+%define __python /usr/bin/python3
+%endif
+
+%if 0%{?rhel} >= 8
+BuildRequires:  python3-devel
+BuildRequires:  python3-setuptools
+Requires: python3-scitokens
+Requires: python3-requests
+Requires: python3-flask
+Requires: python3-mod_wsgi
+%else
+BuildRequires:  python2-devel
+BuildRequires:  python2-setuptools
 Requires:       python2-scitokens
 Requires:       python-requests
 Requires:       python-flask
+Requires:       mod_wsgi
+%endif
 Requires:       httpd
 Requires:       gridsite
-Requires:       mod_wsgi
+
 
 %description
 %{summary}
@@ -41,7 +55,11 @@ Requires:       mod_wsgi
 %package client
 Summary:        Client for X509-based token issuer
 
+%if 0%{?rhel} >= 8
+Requires:       python3-requests
+%else
 Requires:       python-requests
+%endif
 
 %description client
 A client library for the x509-scitokens-issuer.
@@ -50,12 +68,12 @@ A client library for the x509-scitokens-issuer.
 %setup
 
 %build
-%{py2_build}
+%{py_build}
 %cmake .
 
 %install
 make install DESTDIR=%{buildroot}
-%{py2_install}
+%{py_install}
 rm %{buildroot}%{_bindir}/cms-scitokens-init
 
 %if %isdarwin
@@ -113,7 +131,7 @@ fi
 %config(noreplace) %{_sysconfdir}/httpd/conf.d/x509_scitokens_issuer.conf
 %{_bindir}/cms-update-mapping
 %{_bindir}/cms-scitoken-init
-%{python2_sitelib}/x509_scitokens_issuer*
+%{python_sitelib}/x509_scitokens_issuer*
 %attr(0700, apache, apache) %dir %{_localstatedir}/cache/httpd/%{name}
 %ghost %attr(-, apache, apache) %{_localstatedir}/cache/httpd/%{name}/dn_mapping.json
 
@@ -131,6 +149,9 @@ fi
 %{_bindir}/macaroon-init
 
 %changelog
+* Tue Aug 18 2020 Edgar Fajardo <emfajard@ucsd.edu> - 0.8.0-1
+- Adding support for EL8
+
 * Wed Dec 19 2018 Brian Bockelman <bbockelm@cse.unl.edu> - 0.7.0-1
 - Implement new OAuth 2.0-based request for 'macaroons' (or similar).
 
