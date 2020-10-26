@@ -1,5 +1,5 @@
 Name:           x509-scitokens-issuer
-Version:        0.8.0
+Version:        0.8.1
 Release:        1%{?dist}
 Summary:        SciTokens issuer based on X509 authentication.
 
@@ -149,6 +149,9 @@ fi
 %{_bindir}/macaroon-init
 
 %changelog
+* Mon Oct 26 2020 Edgar Fajardo <emfajard@ucsd.edu> - 0.8.1-1
+- Fix bug preventing macaroon-init for EL8
+
 * Tue Aug 18 2020 Edgar Fajardo <emfajard@ucsd.edu> - 0.8.0-1
 - Adding support for EL8
 

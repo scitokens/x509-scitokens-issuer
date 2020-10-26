@@ -19,8 +19,8 @@ int main(int argc, char *argv[])
     const char *url = argv[1];
     int validity = std::stoi(argv[2]);
 
-    std::vector<const char *> activities_list;
-    activities_list.reserve(argc-2);
+    std::vector<const char *> activities_list(argc-2);
+
     for (int idx=0; idx<argc-3; idx++)
     {
         activities_list[idx] = argv[idx+3];
