@@ -7,7 +7,10 @@ Given an X509 proxy, act as an OAuth client and generate a corresponding SciToke
 import os
 import sys
 import json
-import urlparse
+try:
+    from urllib.parse import urljoin
+except ImportError:
+    from urllib import urljoin
 
 import requests
 
@@ -46,14 +49,14 @@ def get_token_endpoint(issuer):
     """
     if not issuer.endswith("/"):
         issuer += "/"
-    config_url = urlparse.urljoin(issuer, ".well-known/openid-configuration")
+    config_url = urljoin(issuer, ".well-known/openid-configuration")
     response = requests.get(config_url)
     endpoint_info = json.loads(response.text)
     if response.status_code != requests.codes.ok:
-        print >> sys.stderr, "Failed to access the auto-discovery URL (%s) for issuer %s (status=%d): %s" % (config_url, issuer, response.status_code, response.text[:2048])
+        print("Failed to access the auto-discovery URL (%s) for issuer %s (status=%d): %s" % (config_url, issuer, response.status_code, response.text[:2048]), file=sys.stderr)
         sys.exit(1)
     elif 'token_endpoint' not in endpoint_info:
-        print >> sys.stderr, "Token endpoint not available for issuer %s" % issuer
+        print("Token endpoint not available for issuer %s" % issuer, file=sys.stderr)
         sys.exit(1)
     return endpoint_info['token_endpoint']
 
@@ -63,23 +66,23 @@ def generate_token(endpoint):
     Call out to the OAuth2 token issuer, using the client credentials
     grant type, and receive a SciToken.
     """
-    print "Querying %s for new token." % endpoint
+    print("Querying %s for new token." % endpoint)
     with configure_authenticated_session() as session:
         response = session.post(endpoint, headers={"Accept": "application/json"},
                                 data={"grant_type": "client_credentials"})
 
     if response.status_code == requests.codes.ok:
-        print "Successfully generated a new token:"
+        print("Successfully generated a new token:")
         return response.text
     else:
-        print >> sys.stderr, "Issuer failed request (status %d): %s" % (response.status_code, response.text[:2048])
+        print("Issuer failed request (status %d): %s" % (response.status_code, response.text[:2048]), file=sys.stderr)
         sys.exit(1)
 
 
 def main():
     endpoint = get_token_endpoint(DEFAULT_ISSUER)
     token = generate_token(endpoint)
-    print token
+    print(token)
 
 
 if __name__ == '__main__':

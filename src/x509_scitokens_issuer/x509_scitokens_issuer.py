@@ -1,18 +1,22 @@
 from __future__ import print_function
+from __future__ import absolute_import
 import os
 import re
 import glob
 import json
 import time
-import urllib
-import urlparse
+try:
+    from urllib.parse import unquote_plus, SplitResult, urlunsplit
+except ImportError:
+    from urllib import unquote_plus
+    from urlparse import SplitResult, urlunsplit
 import threading
 import traceback
 import platform
 import requests
 
 import scitokens
-import utils as x509_utils
+from . import utils as x509_utils
 
 import cryptography.hazmat.primitives.asymmetric.ec as ec
 
@@ -97,7 +101,7 @@ class FQANMatcher(object):
         if not grst_fqan.startswith("fqan:"):
             return False
 
-        grst_fqan = urllib.unquote_plus(grst_fqan[5:])
+        grst_fqan = unquote_plus(grst_fqan[5:])
         grst_group, grst_role = self.parse_fqan(grst_fqan)
 
         if not grst_group.startswith(self.group):
@@ -119,7 +123,7 @@ class DNMatcher(object):
         if not grst_dn.startswith("dn:"):
             return False
 
-        grst_dn = urllib.unquote_plus(grst_dn[3:])
+        grst_dn = unquote_plus(grst_dn[3:])
         return grst_dn == self.dn
 
 
@@ -139,9 +143,9 @@ def regenerate_mappings():
         if scope:
             scopes.append(scope)
         if match.startswith("dn:"):
-            rule_list.append((DNMatcher(urllib.unquote_plus(match[3:])), scopes))
+            rule_list.append((DNMatcher(unquote_plus(match[3:])), scopes))
         elif match.startswith("fqan:"):
-            rule_list.append((FQANMatcher(urllib.unquote_plus(match[5:])), scopes))
+            rule_list.append((FQANMatcher(unquote_plus(match[5:])), scopes))
 
     users_fname = app.config.get("DN_MAPPING")
     if users_fname:
@@ -194,11 +198,11 @@ launch_updater_thread()
 def generate_formats(cred):
     info = {}
     if cred.startswith('username:'):
-        info['username'] = urllib.unquote_plus(cred[9:])
+        info['username'] = unquote_plus(cred[9:])
         return info
     if cred.startswith("dn:"):
-        dn = urllib.unquote_plus(cred[3:])
-        username = app.users_mapping.get(urllib.unquote_plus(cred[3:]))
+        dn = unquote_plus(cred[3:])
+        username = app.users_mapping.get(unquote_plus(cred[3:]))
         if username:
             info["username"] = username
     return info
@@ -297,8 +301,7 @@ def token_issuer():
                 entry_num += 1
             else:
                 entry_num = int(key[15:]) # 15 = len("GRST_CRED_AURI_")
-    keys = creds.keys()
-    keys.sort()
+    keys = sorted(creds.keys())
     entries = []
     for key in keys:
         if not dn_cred and creds[key].startswith("dn:"):
@@ -307,7 +310,7 @@ def token_issuer():
 
     if not dn_cred:
         return return_oauth_error_response("No client certificate or proxy used for TLS authentication.")
-    dn_cred = urllib.unquote_plus(dn_cred)
+    dn_cred = unquote_plus(dn_cred)
 
     scopes, user = generate_scopes_and_user(entries)
     if app.config.get('VERBOSE', False):
@@ -350,8 +353,8 @@ def token_issuer():
     if 'ISSUER' in app.config:
         issuer = app.config['ISSUER']
     else:
-        split = urlparse.SplitResult(scheme="https", netloc=request.environ['HTTP_HOST'], path=request.environ['REQUEST_URI'], query="", fragment="")
-        issuer = urlparse.urlunsplit(split)
+        split = SplitResult(scheme="https", netloc=request.environ['HTTP_HOST'], path=request.environ['REQUEST_URI'], query="", fragment="")
+        issuer = urlunsplit(split)
 
     try:
         serialized_token = token.serialize(issuer = issuer, lifetime = app.config['LIFETIME'])
